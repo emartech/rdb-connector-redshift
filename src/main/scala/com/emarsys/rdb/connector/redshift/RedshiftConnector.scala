@@ -17,7 +17,7 @@ class RedshiftConnector (db: Database)(implicit executionContext: ExecutionConte
   }
 
   override def testConnection(): ConnectorResponse[Unit] = {
-    db.run(sql"SELECT 1".as[Int]).map(_ => Right()).recover{ case x => println(x); Left(ErrorWithMessage("Cannot connect to the sql server")) }
+    db.run(sql"SELECT 1".as[Int]).map(_ => Right()).recover{ case _ => Left(ErrorWithMessage("Cannot connect to the sql server")) }
   }
 
 }
@@ -41,7 +41,7 @@ object RedshiftConnector {
       user = config.user,
       password = config.password,
       prop = new Properties(),
-      executor = AsyncExecutor.default()
+      executor = executor
     )
 
     Future(Right(new RedshiftConnector(db)))

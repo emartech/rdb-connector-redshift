@@ -14,6 +14,7 @@ lazy val root = (project in file("."))
 
 
 
+resolvers += "Amazon"  at "http://redshift-maven-repository.s3-website-us-east-1.amazonaws.com/release"
 resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= {
