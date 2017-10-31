@@ -9,10 +9,10 @@ object ConfigHelper {
 
   lazy val dbConnectorConfig = RedshiftConnectionConfig(
     host = ConfigFactory.load().getString("dbconf.host"),
-    port= ConfigFactory.load().getInt("dbconf.port"),
-    dbName= ConfigFactory.load().getString("dbconf.dbName"),
-    user= ConfigFactory.load().getString("dbconf.user"),
-    password= ConfigFactory.load().getString("dbconf.password"),
-    connectionParams= ConfigFactory.load().getString("dbconf.connectionParams")
+    port = ConfigFactory.load().getInt("dbconf.port"),
+    dbName = ConfigFactory.load().getString("dbconf.dbName"),
+    dbUser = ConfigFactory.load().getString("dbconf.user"),
+    dbPassword = ConfigFactory.load().getString("dbconf.password"),
+    connectionParams = ConfigFactory.load().getString("dbconf.connectionParams")
   )
 }

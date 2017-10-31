@@ -13,8 +13,8 @@ class RedshiftConnectorSpec extends WordSpecLike with Matchers{
         host = "host",
         port = 123,
         dbName = "database",
-        user = "me",
-        password = "secret",
+        dbUser = "me",
+        dbPassword = "secret",
         connectionParams = "?param1=asd"
       )
 

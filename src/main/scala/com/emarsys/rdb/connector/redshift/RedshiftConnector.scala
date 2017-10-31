@@ -24,12 +24,12 @@ class RedshiftConnector (db: Database)(implicit executionContext: ExecutionConte
 
 object RedshiftConnector {
   case class RedshiftConnectionConfig(
-                                    host: String,
-                                    port: Int,
-                                    dbName: String,
-                                    user: String,
-                                    password: String,
-                                    connectionParams: String
+                                       host: String,
+                                       port: Int,
+                                       dbName: String,
+                                       dbUser: String,
+                                       dbPassword: String,
+                                       connectionParams: String
                                   )
 
 
@@ -38,8 +38,8 @@ object RedshiftConnector {
     val db = Database.forURL(
       url = createUrl(config),
       driver = "com.amazon.redshift.jdbc42.Driver",
-      user = config.user,
-      password = config.password,
+      user = config.dbUser,
+      password = config.dbPassword,
       prop = new Properties(),
       executor = executor
     )
