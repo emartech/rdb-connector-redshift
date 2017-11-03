@@ -5,6 +5,7 @@ import java.util.Properties
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.Connector
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
+import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, TableModel}
 import slick.jdbc.PostgresProfile.api._
 import slick.util.AsyncExecutor
 
@@ -18,6 +19,37 @@ class RedshiftConnector (db: Database)(implicit executionContext: ExecutionConte
 
   override def testConnection(): ConnectorResponse[Unit] = {
     db.run(sql"SELECT 1".as[Int]).map(_ => Right()).recover{ case _ => Left(ErrorWithMessage("Cannot connect to the sql server")) }
+  }
+
+  override def listTables(): ConnectorResponse[Seq[TableModel]] = {
+    db.run(sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = 'public';".as[(String, String)])
+      .map(_.map(parseToTableModel))
+      .map(Right(_))
+      .recover {
+        case ex => Left(ErrorWithMessage(ex.toString))
+      }
+  }
+
+  override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
+    db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = 'public';".as[(String, String)])
+      .map(_.map(parseToFiledModel))
+      .map(Right(_))
+      .recover {
+        case ex => Left(ErrorWithMessage(ex.toString))
+      }
+  }
+
+  private def parseToFiledModel(f: (String, String)): FieldModel = {
+    FieldModel(f._1, f._2)
+  }
+
+  private def parseToTableModel(t: (String, String)): TableModel = {
+    TableModel(t._1, isTableTypeView(t._2))
+  }
+
+  private def isTableTypeView(tableType: String): Boolean = tableType match {
+    case "VIEW" => true
+    case _      => false
   }
 
 }
