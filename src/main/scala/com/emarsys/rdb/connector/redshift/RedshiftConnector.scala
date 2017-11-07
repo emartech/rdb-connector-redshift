@@ -3,9 +3,9 @@ package com.emarsys.rdb.connector.redshift
 import java.util.Properties
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.Connector
+import com.emarsys.rdb.connector.common.models.{ConnectionConfig, Connector}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
-import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, TableModel}
+import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, FullTableModel, TableModel}
 import slick.jdbc.PostgresProfile.api._
 import slick.util.AsyncExecutor
 
@@ -39,6 +39,23 @@ class RedshiftConnector (db: Database)(implicit executionContext: ExecutionConte
       }
   }
 
+  override def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = {
+    val futureMap = listAllFields()
+    for {
+      tablesE <- listTables()
+      map <- futureMap
+    } yield tablesE.map(makeTablesWithFields(_, map))
+  }
+
+  private def listAllFields(): Future[Map[String, Seq[FieldModel]]] = {
+    db.run(sql"SELECT table_name, column_name, data_type FROM SVV_COLUMNS WHERE table_schema = 'public';".as[(String, String, String)])
+      .map(_.groupBy(_._1).mapValues(_.map(x => parseToFiledModel(x._2 -> x._3)).toSeq))
+  }
+
+  private def makeTablesWithFields(tableList: Seq[TableModel], tableFieldMap: Map[String, Seq[FieldModel]]): Seq[FullTableModel] = {
+    tableList.map(table => FullTableModel(table.name, table.isView, tableFieldMap(table.name)))
+  }
+
   private def parseToFiledModel(f: (String, String)): FieldModel = {
     FieldModel(f._1, f._2)
   }
@@ -62,7 +79,7 @@ object RedshiftConnector {
                                        dbUser: String,
                                        dbPassword: String,
                                        connectionParams: String
-                                  )
+                                  ) extends ConnectionConfig
 
 
   def apply(config: RedshiftConnectionConfig)(executor: AsyncExecutor)(implicit executionContext: ExecutionContext): ConnectorResponse[RedshiftConnector] = {
