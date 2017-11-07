@@ -23,6 +23,7 @@ libraryDependencies ++= {
     "com.github.emartech" % "rdb-connector-common"  % "-SNAPSHOT" changing(),
     "com.typesafe.slick"  %% "slick"                % "3.2.0",
     "com.amazon.redshift" %  "redshift-jdbc42"      % "1.2.8.1005",
-    "org.scalatest"       %% "scalatest"            % scalaTestV  % "test"
+    "org.scalatest"       %% "scalatest"            % scalaTestV  % "test",
+    "com.github.emartech" % "rdb-connector-test"    % "-SNAPSHOT" % "test" changing()
   )
 }
