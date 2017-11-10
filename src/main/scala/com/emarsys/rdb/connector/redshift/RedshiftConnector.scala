@@ -84,18 +84,28 @@ object RedshiftConnector {
 
   def apply(config: RedshiftConnectionConfig)(executor: AsyncExecutor)(implicit executionContext: ExecutionContext): ConnectorResponse[RedshiftConnector] = {
 
-    val db = Database.forURL(
-      url = createUrl(config),
-      driver = "com.amazon.redshift.jdbc42.Driver",
-      user = config.dbUser,
-      password = config.dbPassword,
-      prop = new Properties(),
-      executor = executor
-    )
+    if (checkSsl(config.connectionParams)) {
 
-    Future(Right(new RedshiftConnector(db)))
+      val db = Database.forURL(
+        url = createUrl(config),
+        driver = "com.amazon.redshift.jdbc42.Driver",
+        user = config.dbUser,
+        password = config.dbPassword,
+        prop = new Properties(),
+        executor = executor
+      )
+
+      Future(Right(new RedshiftConnector(db)))
+
+    } else {
+      Future(Left(ErrorWithMessage("SSL Error")))
+    }
   }
 
+
+  private[redshift] def checkSsl(connectionParams: String): Boolean = {
+    !connectionParams.matches(".*ssl=false.*")
+  }
 
 
   private[redshift] def createUrl(config: RedshiftConnectionConfig) = {

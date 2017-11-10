@@ -14,6 +14,22 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
     implicit val executionContext = scala.concurrent.ExecutionContext.Implicits.global
     val executor = AsyncExecutor.default()
 
+    "create connector" should {
+
+      "return error if not use ssl" in {
+        var connectionParams = TestHelper.TEST_CONNECTION_CONFIG.connectionParams
+        if (!connectionParams.isEmpty) {
+          connectionParams += "&"
+        }
+        connectionParams += "ssl=false"
+
+        val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = connectionParams)
+        val connection = Await.result(RedshiftConnector(badConnection)(executor), 3.seconds)
+        connection shouldBe Left(ErrorWithMessage("SSL Error"))
+      }
+
+    }
+
     "#testConnection" should {
 
       "return ok in happy case" in {
