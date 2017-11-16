@@ -5,73 +5,32 @@ import java.util.Properties
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.{ConnectionConfig, Connector}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
-import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, FullTableModel, TableModel}
+import com.emarsys.rdb.connector.redshift.RedshiftConnector.RedshiftConnectorConfig
 import slick.jdbc.PostgresProfile.api._
 import slick.util.AsyncExecutor
 
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class RedshiftConnector (db: Database)(implicit executionContext: ExecutionContext) extends Connector {
+class RedshiftConnector(
+                         protected val db: Database,
+                         protected val connectorConfig: RedshiftConnectorConfig
+                       )(
+                         protected implicit val executionContext: ExecutionContext
+                       )
+  extends Connector
+    with RedshiftTestConnection
+    with RedshiftMetadata
+    with RedshiftSimpleSelect {
 
   override def close(): Future[Unit] = {
     db.shutdown
   }
-
-  override def testConnection(): ConnectorResponse[Unit] = {
-    db.run(sql"SELECT 1".as[Int]).map(_ => Right()).recover{ case _ => Left(ErrorWithMessage("Cannot connect to the sql server")) }
-  }
-
-  override def listTables(): ConnectorResponse[Seq[TableModel]] = {
-    db.run(sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = 'public';".as[(String, String)])
-      .map(_.map(parseToTableModel))
-      .map(Right(_))
-      .recover {
-        case ex => Left(ErrorWithMessage(ex.toString))
-      }
-  }
-
-  override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
-    db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = 'public';".as[(String, String)])
-      .map(_.map(parseToFiledModel))
-      .map(Right(_))
-      .recover {
-        case ex => Left(ErrorWithMessage(ex.toString))
-      }
-  }
-
-  override def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = {
-    val futureMap = listAllFields()
-    for {
-      tablesE <- listTables()
-      map <- futureMap
-    } yield tablesE.map(makeTablesWithFields(_, map))
-  }
-
-  private def listAllFields(): Future[Map[String, Seq[FieldModel]]] = {
-    db.run(sql"SELECT table_name, column_name, data_type FROM SVV_COLUMNS WHERE table_schema = 'public';".as[(String, String, String)])
-      .map(_.groupBy(_._1).mapValues(_.map(x => parseToFiledModel(x._2 -> x._3)).toSeq))
-  }
-
-  private def makeTablesWithFields(tableList: Seq[TableModel], tableFieldMap: Map[String, Seq[FieldModel]]): Seq[FullTableModel] = {
-    tableList.map(table => FullTableModel(table.name, table.isView, tableFieldMap(table.name)))
-  }
-
-  private def parseToFiledModel(f: (String, String)): FieldModel = {
-    FieldModel(f._1, f._2)
-  }
-
-  private def parseToTableModel(t: (String, String)): TableModel = {
-    TableModel(t._1, isTableTypeView(t._2))
-  }
-
-  private def isTableTypeView(tableType: String): Boolean = tableType match {
-    case "VIEW" => true
-    case _      => false
-  }
-
 }
 
 object RedshiftConnector {
+
   case class RedshiftConnectionConfig(
                                        host: String,
                                        port: Int,
@@ -79,10 +38,26 @@ object RedshiftConnector {
                                        dbUser: String,
                                        dbPassword: String,
                                        connectionParams: String
-                                  ) extends ConnectionConfig
+                                     ) extends ConnectionConfig
 
+  case class RedshiftConnectorConfig(
+                                      queryTimeout: FiniteDuration,
+                                      streamChunkSize: Int
+                                    )
 
-  def apply(config: RedshiftConnectionConfig)(executor: AsyncExecutor)(implicit executionContext: ExecutionContext): ConnectorResponse[RedshiftConnector] = {
+  private val defaultConfig = RedshiftConnectorConfig(
+    queryTimeout = 20.minutes,
+    streamChunkSize = 5000
+  )
+
+  def apply(
+             config: RedshiftConnectionConfig,
+             connectorConfig: RedshiftConnectorConfig = defaultConfig
+           )(
+             executor: AsyncExecutor
+           )(
+             implicit executionContext: ExecutionContext
+           ): ConnectorResponse[RedshiftConnector] = {
 
     if (checkSsl(config.connectionParams)) {
 
@@ -95,18 +70,16 @@ object RedshiftConnector {
         executor = executor
       )
 
-      Future(Right(new RedshiftConnector(db)))
+      Future(Right(new RedshiftConnector(db, connectorConfig)))
 
     } else {
       Future(Left(ErrorWithMessage("SSL Error")))
     }
   }
 
-
   private[redshift] def checkSsl(connectionParams: String): Boolean = {
     !connectionParams.matches(".*ssl=false.*")
   }
-
 
   private[redshift] def createUrl(config: RedshiftConnectionConfig) = {
     s"jdbc:redshift://${config.host}:${config.port}/${config.dbName}${safeConnectionParams(config.connectionParams)}"

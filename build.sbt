@@ -24,6 +24,7 @@ libraryDependencies ++= {
     "com.typesafe.slick"  %% "slick"                % "3.2.0",
     "com.amazon.redshift" %  "redshift-jdbc42"      % "1.2.8.1005",
     "org.scalatest"       %% "scalatest"            % scalaTestV  % "test",
+    "com.typesafe.akka"   %% "akka-stream-testkit"  % "2.5.6"     % "test",
     "com.github.emartech" % "rdb-connector-test"    % "-SNAPSHOT" % "test" changing()
   )
 }

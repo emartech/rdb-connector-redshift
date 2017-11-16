@@ -28,7 +28,7 @@ class RedshiftMetadataItSpec extends MetadataItSpec {
     Await.result(for {
       _ <- TestHelper.executeQuery(createTableSql)
       _ <- TestHelper.executeQuery(createViewSql)
-    } yield (), 5.seconds)
+    } yield (), 15.seconds)
   }
 
   def cleanUpDb(): Unit = {
@@ -37,7 +37,7 @@ class RedshiftMetadataItSpec extends MetadataItSpec {
     Await.result(for {
       _ <- TestHelper.executeQuery(dropViewSql)
       _ <- TestHelper.executeQuery(dropTableSql)
-    } yield (), 5.seconds)
+    } yield (), 15.seconds)
   }
 
 }
