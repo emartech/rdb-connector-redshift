@@ -1,11 +1,10 @@
 package com.emarsys.rdb.connector.redshift
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
+import com.emarsys.rdb.connector.common.models.Errors.{ErrorWithMessage, TableNotFound}
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, FullTableModel, TableModel}
 
 import scala.concurrent.Future
-
 import slick.jdbc.PostgresProfile.api._
 
 trait RedshiftMetadata {
@@ -23,7 +22,13 @@ trait RedshiftMetadata {
   override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
     db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = 'public';".as[(String, String)])
       .map(_.map(parseToFiledModel))
-      .map(Right(_))
+      .map(fields => {
+        if(fields.isEmpty) {
+          Left(TableNotFound(tableName))
+        } else {
+          Right(fields)
+        }
+      })
       .recover {
         case ex => Left(ErrorWithMessage(ex.toString))
       }

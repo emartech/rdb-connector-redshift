@@ -47,16 +47,5 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
       }
 
     }
-
-    "#isOptimized" should {
-
-      "success" in {
-        val connection = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(executor), 3.seconds).toOption.get
-        val result = Await.result(connection.isOptimized("ANY", Seq("ANY")), 3.seconds)
-        result shouldBe Right(true)
-        connection.close()
-      }
-
-    }
   }
 }

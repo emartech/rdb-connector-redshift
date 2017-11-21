@@ -1,13 +1,14 @@
 package com.emarsys.rdb.connector.redshift
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-
-import scala.concurrent.Future
+import com.emarsys.rdb.connector.common.models.Errors.TableNotFound
 
 trait RedshiftIsOptimized {
-  self: RedshiftConnector =>
+  self: RedshiftConnector with RedshiftMetadata =>
 
   override def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = {
-    Future.successful(Right(true))
+    listTables()
+      .map(_.map(_.exists(_.name == table))
+      .flatMap(if(_) Right(true) else Left(TableNotFound(table))))
   }
 }
