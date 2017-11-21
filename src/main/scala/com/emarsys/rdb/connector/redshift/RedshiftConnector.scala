@@ -22,7 +22,8 @@ class RedshiftConnector(
   extends Connector
     with RedshiftTestConnection
     with RedshiftMetadata
-    with RedshiftSimpleSelect {
+    with RedshiftSimpleSelect
+    with RedshiftIsOptimized {
 
   override def close(): Future[Unit] = {
     db.shutdown
