@@ -23,6 +23,7 @@ class RedshiftConnector(
     with RedshiftTestConnection
     with RedshiftMetadata
     with RedshiftSimpleSelect
+    with RedshiftRawSelect
     with RedshiftIsOptimized {
 
   override def close(): Future[Unit] = {
