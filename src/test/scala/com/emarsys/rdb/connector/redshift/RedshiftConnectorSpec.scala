@@ -1,5 +1,6 @@
 package com.emarsys.rdb.connector.redshift
 
+import com.emarsys.rdb.connector.common.models.MetaData
 import com.emarsys.rdb.connector.redshift.RedshiftConnector.RedshiftConnectionConfig
 import org.scalatest.{Matchers, WordSpecLike}
 
@@ -47,6 +48,14 @@ class RedshiftConnectorSpec extends WordSpecLike with Matchers{
 
       "return false if contains ssl=false" in {
         RedshiftConnector.checkSsl("?param1=param&ssl=false&param2=param2") shouldBe false
+      }
+
+    }
+
+    "#meta" should {
+
+      "return redshift qouters" in {
+        RedshiftConnector.meta() shouldEqual MetaData(nameQuoter = "\"", valueQuoter = "'", escape = "\\")
       }
 
     }

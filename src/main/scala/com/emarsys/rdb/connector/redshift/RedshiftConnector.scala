@@ -3,7 +3,7 @@ package com.emarsys.rdb.connector.redshift
 import java.util.Properties
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.{ConnectionConfig, Connector}
+import com.emarsys.rdb.connector.common.models.{ConnectionConfig, Connector, ConnectorCompanion, MetaData}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.redshift.RedshiftConnector.RedshiftConnectorConfig
 import slick.jdbc.PostgresProfile.api._
@@ -31,7 +31,7 @@ class RedshiftConnector(
   }
 }
 
-object RedshiftConnector {
+object RedshiftConnector extends ConnectorCompanion {
 
   case class RedshiftConnectionConfig(
                                        host: String,
@@ -78,6 +78,8 @@ object RedshiftConnector {
       Future(Left(ErrorWithMessage("SSL Error")))
     }
   }
+
+  override def meta() = MetaData("\"", "'", "\\")
 
   private[redshift] def checkSsl(connectionParams: String): Boolean = {
     !connectionParams.matches(".*ssl=false.*")
