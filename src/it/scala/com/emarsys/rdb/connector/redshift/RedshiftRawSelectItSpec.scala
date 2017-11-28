@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
+import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.redshift.utils.SelectDbInitHelper
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -45,7 +46,7 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
       "list table values" in {
         val simpleSelect = s"""SELECT * FROM "$aTableName";"""
 
-        val result = getRawSelectResult(simpleSelect, None)
+        val result = getStreamResult(connector.rawSelect(simpleSelect, None))
 
         checkResultWithoutRowOrder(result, Seq(
           Seq("A1", "A2", "A3"),
@@ -64,7 +65,7 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
 
         val limit = 2
 
-        val result = getRawSelectResult(simpleSelect, Option(limit))
+        val result = getStreamResult(connector.rawSelect(simpleSelect, Option(limit)))
 
         result.size shouldEqual limit+1
       }
@@ -101,7 +102,7 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
       "project one col as expected" in {
         val simpleSelect = s"""SELECT * FROM "$aTableName";"""
 
-        val result = getProjectedRawSelectResult(simpleSelect, Seq("A1"))
+        val result = getStreamResult(connector.projectedRawSelect(simpleSelect, Seq("A1")))
 
         checkResultWithoutRowOrder(result, Seq(
           Seq("A1"),
@@ -119,7 +120,7 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
       "project more col as expected" in {
         val simpleSelect = s"""SELECT * FROM "$aTableName";"""
 
-        val result = getProjectedRawSelectResult(simpleSelect, Seq("A2", "A3"))
+        val result = getStreamResult(connector.projectedRawSelect(simpleSelect, Seq("A2", "A3")))
 
         checkResultWithoutRowOrder(result, Seq(
           Seq("A2", "A3"),
@@ -135,6 +136,21 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
 
 
     }
+
+    "#analyzeRawSelect" should {
+      "return result" in {
+        val simpleSelect = s"""SELECT * FROM "$aTableName";"""
+
+        val result = getStreamResult(connector.analyzeRawSelect(simpleSelect))
+
+        result shouldEqual Seq(
+          Seq("QUERY PLAN"),
+          Seq(s"""XN Seq Scan on "$aTableName"  (cost=0.00..0.07 rows=7 width=405)"""),
+          Seq(s"----- Tables missing statistics: $aTableName -----"),
+          Seq("----- Update statistics by running the ANALYZE command on these tables -----")
+        )
+      }
+    }
   }
 
   def checkResultWithoutRowOrder(result: Seq[Seq[String]], expected: Seq[Seq[String]]): Unit = {
@@ -143,17 +159,8 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
     result.foreach(expected contains _)
   }
 
-  def getRawSelectResult(rawSql: String, limit: Option[Int]): Seq[Seq[String]] = {
-    val resultE = Await.result(connector.rawSelect(rawSql, limit), awaitTimeout)
-
-    resultE shouldBe a[Right[_, _]]
-    val resultStream: Source[Seq[String], NotUsed] = resultE.right.get
-
-    Await.result(resultStream.runWith(Sink.seq), awaitTimeout)
-  }
-
-  def getProjectedRawSelectResult(rawSql: String, fields: Seq[String]): Seq[Seq[String]] = {
-    val resultE = Await.result(connector.projectedRawSelect(rawSql, fields), awaitTimeout)
+  def getStreamResult(s: ConnectorResponse[Source[Seq[String], NotUsed]]): Seq[Seq[String]] = {
+    val resultE = Await.result(s, awaitTimeout)
 
     resultE shouldBe a[Right[_, _]]
     val resultStream: Source[Seq[String], NotUsed] = resultE.right.get

@@ -24,13 +24,17 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
   }
 
   override def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = {
-    val trimed = rawSql.trim
     val modifiedSql = "EXPLAIN " + removeEndingSemicolons(rawSql)
     db.run(sql"#$modifiedSql".as[(String)])
       .map(_ => Right())
       .recover {
         case ex => Left(ErrorWithMessage(ex.toString))
       }
+  }
+
+  override def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+    val modifiedSql = "EXPLAIN " + removeEndingSemicolons(rawSql)
+    streamingQuery(modifiedSql)
   }
 
   override def projectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
