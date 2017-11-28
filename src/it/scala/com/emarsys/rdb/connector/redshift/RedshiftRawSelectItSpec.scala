@@ -95,6 +95,46 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
         Await.result(connector.validateRawSelect(simpleSelect), awaitTimeout) shouldBe a [Left[ErrorWithMessage,Unit]]
       }
     }
+
+    "#projectedRawSelect" should {
+
+      "project one col as expected" in {
+        val simpleSelect = s"""SELECT * FROM "$aTableName";"""
+
+        val result = getProjectedRawSelectResult(simpleSelect, Seq("A1"))
+
+        checkResultWithoutRowOrder(result, Seq(
+          Seq("A1"),
+          Seq("v1"),
+          Seq("v2"),
+          Seq("v3"),
+          Seq("v4"),
+          Seq("v5"),
+          Seq("v6"),
+          Seq("v7")
+        ))
+
+      }
+
+      "project more col as expected" in {
+        val simpleSelect = s"""SELECT * FROM "$aTableName";"""
+
+        val result = getProjectedRawSelectResult(simpleSelect, Seq("A2", "A3"))
+
+        checkResultWithoutRowOrder(result, Seq(
+          Seq("A2", "A3"),
+          Seq("1", "1"),
+          Seq("2", "0"),
+          Seq("3", "1"),
+          Seq("-4", "0"),
+          Seq(null, "0"),
+          Seq("6", null),
+          Seq(null, null)
+        ))
+      }
+
+
+    }
   }
 
   def checkResultWithoutRowOrder(result: Seq[Seq[String]], expected: Seq[Seq[String]]): Unit = {
@@ -105,6 +145,15 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with SelectDbInitHe
 
   def getRawSelectResult(rawSql: String, limit: Option[Int]): Seq[Seq[String]] = {
     val resultE = Await.result(connector.rawSelect(rawSql, limit), awaitTimeout)
+
+    resultE shouldBe a[Right[_, _]]
+    val resultStream: Source[Seq[String], NotUsed] = resultE.right.get
+
+    Await.result(resultStream.runWith(Sink.seq), awaitTimeout)
+  }
+
+  def getProjectedRawSelectResult(rawSql: String, fields: Seq[String]): Seq[Seq[String]] = {
+    val resultE = Await.result(connector.projectedRawSelect(rawSql, fields), awaitTimeout)
 
     resultE shouldBe a[Right[_, _]]
     val resultStream: Source[Seq[String], NotUsed] = resultE.right.get

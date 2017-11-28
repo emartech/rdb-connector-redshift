@@ -3,13 +3,18 @@ package com.emarsys.rdb.connector.redshift
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.ConnectorResponse
+import com.emarsys.rdb.connector.common.defaults.DefaultSqlWriters
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
+import com.emarsys.rdb.connector.common.models.SimpleSelect.FieldName
 import slick.jdbc.MySQLProfile.api._
 
 import scala.annotation.tailrec
 
 trait RedshiftRawSelect extends RedshiftStreamingQuery {
   self: RedshiftConnector =>
+
+  import DefaultSqlWriters._
+  import com.emarsys.rdb.connector.common.defaults.SqlWriter._
 
   override def rawSelect(rawSql: String, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val limitAsSql = limit.fold(""){ l =>
@@ -26,6 +31,12 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
       .recover {
         case ex => Left(ErrorWithMessage(ex.toString))
       }
+  }
+
+  override def projectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+    val fieldList = fields.map("t." + FieldName(_).toSql).mkString(", ")
+    val projectedSql = s"SELECT $fieldList FROM ( ${removeEndingSemicolons(rawSql)} ) t"
+    streamingQuery(projectedSql)
   }
 
   @tailrec
