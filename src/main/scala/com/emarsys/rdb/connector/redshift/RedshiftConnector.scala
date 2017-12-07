@@ -17,14 +17,15 @@ class RedshiftConnector(
                          protected val db: Database,
                          protected val connectorConfig: RedshiftConnectorConfig
                        )(
-                         protected implicit val executionContext: ExecutionContext
+                         implicit val executionContext: ExecutionContext
                        )
   extends Connector
     with RedshiftTestConnection
     with RedshiftMetadata
     with RedshiftSimpleSelect
     with RedshiftRawSelect
-    with RedshiftIsOptimized {
+    with RedshiftIsOptimized
+    with RedshiftRawDataManipulation {
 
   override def close(): Future[Unit] = {
     db.shutdown

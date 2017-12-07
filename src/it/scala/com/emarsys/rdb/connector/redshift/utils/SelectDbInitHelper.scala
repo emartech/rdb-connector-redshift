@@ -19,7 +19,7 @@ trait SelectDbInitHelper {
   def initDb(): Unit = {
     val createATableSql =
       s"""CREATE TABLE "$aTableName" (
-         |    A1 varchar(255) NOT NULL,
+         |    A1 varchar(255) NOT NULL UNIQUE,
          |    A2 int,
          |    A3 boolean
          |);""".stripMargin
