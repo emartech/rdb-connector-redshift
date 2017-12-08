@@ -13,6 +13,8 @@ class RedshiftMetadataItSpec extends MetadataItSpec {
 
   val connector: Connector = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds).right.get
 
+  override val awaitTimeout = 15.seconds
+
   def initDb(): Unit = {
     val createTableSql = s"""CREATE TABLE "$tableName" (
                             |    PersonID int,

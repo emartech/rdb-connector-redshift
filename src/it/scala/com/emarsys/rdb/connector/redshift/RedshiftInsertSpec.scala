@@ -4,14 +4,12 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import com.emarsys.rdb.connector.redshift.utils.SelectDbInitHelper
-import com.emarsys.rdb.connector.test.UpdateItSpec
-import concurrent.duration._
+import com.emarsys.rdb.connector.test.InsertItSpec
 
-class RedshiftUpdateItSpec extends TestKit(ActorSystem()) with UpdateItSpec with SelectDbInitHelper {
+class RedshiftInsertSpec extends TestKit(ActorSystem()) with InsertItSpec with SelectDbInitHelper {
+
   val aTableName: String = tableName
-  val bTableName: String = "temp"
-
-  override val awaitTimeout = 15.seconds
+  val bTableName: String = s"temp_$uuid"
 
   override implicit val materializer: Materializer = ActorMaterializer()
 

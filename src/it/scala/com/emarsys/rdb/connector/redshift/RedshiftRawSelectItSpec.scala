@@ -7,6 +7,8 @@ import com.emarsys.rdb.connector.redshift.utils.SelectDbInitHelper
 import com.emarsys.rdb.connector.test.RawSelectItSpec
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
+import concurrent.duration._
+
 import scala.concurrent.ExecutionContextExecutor
 
 class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpec with SelectDbInitHelper with WordSpecLike  with Matchers with BeforeAndAfterAll {
@@ -14,6 +16,8 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpe
   implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+
+  override val awaitTimeout = 15.seconds
 
   override def afterAll(): Unit = {
     system.terminate()
