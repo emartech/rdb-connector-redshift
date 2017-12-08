@@ -9,7 +9,7 @@ import concurrent.duration._
 
 class RedshiftUpdateItSpec extends TestKit(ActorSystem()) with UpdateItSpec with SelectDbInitHelper {
   val aTableName: String = tableName
-  val bTableName: String = "temp"
+  val bTableName: String = s"temp_$uuid"
 
   override val awaitTimeout = 15.seconds
 

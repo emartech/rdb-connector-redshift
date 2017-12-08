@@ -4,11 +4,10 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import com.emarsys.rdb.connector.redshift.utils.SelectDbInitHelper
-import com.emarsys.rdb.connector.test.InsertItSpec
+import com.emarsys.rdb.connector.test.DeleteItSpec
 import concurrent.duration._
 
-class RedshiftInsertSpec extends TestKit(ActorSystem()) with InsertItSpec with SelectDbInitHelper {
-
+class RedshiftDeleteItSpec extends TestKit(ActorSystem()) with DeleteItSpec with SelectDbInitHelper {
   val aTableName: String = tableName
   val bTableName: String = s"temp_$uuid"
 
@@ -20,4 +19,6 @@ class RedshiftInsertSpec extends TestKit(ActorSystem()) with InsertItSpec with S
     system.terminate()
     super.afterAll()
   }
+
 }
+

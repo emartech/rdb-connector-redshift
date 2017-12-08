@@ -2,7 +2,7 @@ package com.emarsys.rdb.connector.redshift
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.defaults.DefaultFieldValueWrapperConverter.convertTypesToString
-import com.emarsys.rdb.connector.common.models.DataManipulation.{FieldValueWrapper, Record, UpdateDefinition}
+import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, FieldValueWrapper, Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import slick.jdbc.PostgresProfile.api._
@@ -25,7 +25,7 @@ trait RedshiftRawDataManipulation {
 
         val setPart = createSetQueryPart(definition.update)
 
-        val wherePart = createConditionQueryPart(definition.search)
+        val wherePart = createConditionQueryPart(definition.search).toSql
 
         sqlu"UPDATE #$table SET #$setPart WHERE #$wherePart"
       }
@@ -49,6 +49,22 @@ trait RedshiftRawDataManipulation {
       val valueList = makeSqlValueList(orderValues(definitions, fields))
 
       val query = sqlu"INSERT INTO #$table #$fieldList VALUES #$valueList"
+
+      db.run(query)
+        .map(result => Right(result))
+        .recover {
+          case ex => Left(ErrorWithMessage(ex.toString))
+        }
+    }
+  }
+
+  override def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = {
+    if (criteria.isEmpty) {
+      Future.successful(Right(0))
+    } else {
+      val table = TableName(tableName).toSql
+      val condition = Or(criteria.map(createConditionQueryPart)).toSql
+      val query = sqlu"DELETE FROM #$table WHERE #$condition"
 
       db.run(query)
         .map(result => Right(result))
@@ -83,7 +99,7 @@ trait RedshiftRawDataManipulation {
         } else {
           EqualToValue(FieldName(field), Value(strVal))
         }
-    }.toList).toSql
+    }.toList)
   }
 
   private def createSetQueryPart(criteria: Map[String, FieldValueWrapper]) = {
