@@ -74,6 +74,42 @@ trait RedshiftRawDataManipulation {
     }
   }
 
+  override def rawReplaceData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = {
+    val newTableName = generateTempTableName(tableName)
+    val newTable = TableName(newTableName).toSql
+    val table = TableName(tableName).toSql
+    val createTableQuery = sqlu"CREATE TABLE #$newTable ( LIKE #$table INCLUDING DEFAULTS )"
+    val dropTableQuery = sqlu"DROP TABLE IF EXISTS #$newTable"
+
+    db.run(createTableQuery)
+      .flatMap( _ =>
+        rawInsertData(newTableName, definitions).flatMap( insertedCount =>
+          swapTableNames(tableName, newTableName).flatMap( _ =>
+            db.run(dropTableQuery).map( _ => insertedCount )
+          )
+        )
+      )
+      .recover {
+        case ex => Left(ErrorWithMessage(ex.toString))
+      }
+  }
+
+  private def swapTableNames(tableName: String, newTableName: String): Future[Seq[Int]] = {
+    val temporaryTableName = generateTempTableName()
+    val tablePairs =  Seq((tableName, temporaryTableName), (newTableName, tableName), (temporaryTableName, newTableName))
+    val queries = tablePairs.map({
+      case (from, to) => TableName(from).toSql + " TO " + TableName(to).toSql
+        sqlu"ALTER TABLE #${TableName(from).toSql} RENAME TO #${TableName(to).toSql}"
+    })
+    db.run(DBIO.sequence(queries).transactionally)
+  }
+
+  private def generateTempTableName(original: String = ""): String = {
+    val shortedName = if(original.length > 30) original.take(30) else original
+    val id = java.util.UUID.randomUUID().toString.replace("-","").take(30)
+    shortedName + "_" + id
+  }
+
   private def orderValues(data: Seq[Record], orderReference: Seq[String]): Seq[Seq[FieldValueWrapper]] = {
     data.map(row => orderReference.map(d => row.getOrElse(d, NullValue)))
   }
