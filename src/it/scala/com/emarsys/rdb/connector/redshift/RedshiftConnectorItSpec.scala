@@ -28,6 +28,17 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
         connection shouldBe Left(ErrorWithMessage("SSL Error"))
       }
 
+      "connect ok when hikari enabled" in {
+
+        object RedshiftWithHikari extends RedshiftConnectorTrait {
+          override val useHikari: Boolean = true
+        }
+
+        val connectorEither = Await.result(RedshiftWithHikari(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds)
+
+        connectorEither shouldBe a [Right[_, _]]
+      }
+
     }
 
     "#testConnection" should {

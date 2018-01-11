@@ -19,9 +19,11 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= {
   val scalaTestV = "3.0.1"
+  val slickV = "3.2.0"
   Seq(
     "com.github.emartech" % "rdb-connector-common"  % "-SNAPSHOT" changing(),
-    "com.typesafe.slick"  %% "slick"                % "3.2.0",
+    "com.typesafe.slick"  %% "slick"                % slickV,
+    "com.typesafe.slick"  %% "slick-hikaricp"       % slickV,
     "com.amazon.redshift" %  "redshift-jdbc42"      % "1.2.8.1005",
     "org.scalatest"       %% "scalatest"            % scalaTestV  % "test",
     "com.typesafe.akka"   %% "akka-stream-testkit"  % "2.5.6"     % "test",

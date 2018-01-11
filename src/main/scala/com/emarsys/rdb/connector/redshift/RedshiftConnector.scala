@@ -5,7 +5,8 @@ import java.util.Properties
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.{ConnectionConfig, Connector, ConnectorCompanion, MetaData}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
-import com.emarsys.rdb.connector.redshift.RedshiftConnector.RedshiftConnectorConfig
+import com.emarsys.rdb.connector.redshift.RedshiftConnector.{RedshiftConnectionConfig, RedshiftConnectorConfig}
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import slick.jdbc.PostgresProfile.api._
 import slick.util.AsyncExecutor
 
@@ -32,7 +33,7 @@ class RedshiftConnector(
   }
 }
 
-object RedshiftConnector extends ConnectorCompanion {
+object RedshiftConnector extends RedshiftConnectorTrait {
 
   case class RedshiftConnectionConfig(
                                        host: String,
@@ -48,10 +49,15 @@ object RedshiftConnector extends ConnectorCompanion {
                                       streamChunkSize: Int
                                     )
 
+}
+
+trait RedshiftConnectorTrait extends ConnectorCompanion {
   private val defaultConfig = RedshiftConnectorConfig(
     queryTimeout = 20.minutes,
     streamChunkSize = 5000
   )
+
+  val useHikari: Boolean = Config.db.useHikari
 
   def apply(
              config: RedshiftConnectionConfig,
@@ -64,14 +70,25 @@ object RedshiftConnector extends ConnectorCompanion {
 
     if (checkSsl(config.connectionParams)) {
 
-      val db = Database.forURL(
-        url = createUrl(config),
-        driver = "com.amazon.redshift.jdbc42.Driver",
-        user = config.dbUser,
-        password = config.dbPassword,
-        prop = new Properties(),
-        executor = executor
-      )
+      val db =
+        if(!useHikari) {
+          Database.forURL(
+            url = createUrl(config),
+            driver = "com.amazon.redshift.jdbc42.Driver",
+            user = config.dbUser,
+            password = config.dbPassword,
+            prop = new Properties(),
+            executor = executor
+          )
+        } else {
+          val customDbConf = ConfigFactory.load()
+            .withValue("redshiftdb.properties.url", ConfigValueFactory.fromAnyRef(createUrl(config)))
+            .withValue("redshiftdb.properties.user", ConfigValueFactory.fromAnyRef(config.dbUser))
+            .withValue("redshiftdb.properties.password", ConfigValueFactory.fromAnyRef(config.dbPassword))
+            .withValue("redshiftdb.properties.driver", ConfigValueFactory.fromAnyRef("com.amazon.redshift.jdbc42.Driver"))
+
+          Database.forConfig("redshiftdb", customDbConf)
+        }
 
       Future(Right(new RedshiftConnector(db, connectorConfig)))
 
