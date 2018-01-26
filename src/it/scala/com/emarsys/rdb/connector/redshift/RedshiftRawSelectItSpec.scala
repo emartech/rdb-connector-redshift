@@ -39,9 +39,7 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpe
 
       result shouldEqual Seq(
         Seq("QUERY PLAN"),
-        Seq(s"""XN Seq Scan on "$aTableName"  (cost=0.00..0.07 rows=7 width=405)"""),
-        Seq(s"----- Tables missing statistics: $aTableName -----"),
-        Seq("----- Update statistics by running the ANALYZE command on these tables -----")
+        Seq(s"""XN Result  (cost=0.00..0.01 rows=1 width=0)""")
       )
     }
   }
