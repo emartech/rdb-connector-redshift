@@ -49,10 +49,10 @@ trait RedshiftStreamingQuery {
     val columnTypes = (1 to result.numColumns).map(result.rs.getMetaData.getColumnType(_))
 
     (0 until result.numColumns).map { i =>
-      if (columnTypes(i) == Types.TIMESTAMP) {
-        parseDateTime(result.nextString())
-      } else {
-        result.nextString()
+      columnTypes(i) match {
+        case Types.TIMESTAMP => parseDateTime(result.nextString())
+        case Types.BIT => parseBoolean(result.nextString())
+        case _ => result.nextString()
       }
     }
   }
@@ -63,5 +63,11 @@ trait RedshiftStreamingQuery {
   private def parseDateTime(column: String): String = Option(column) match {
     case Some(s) => s.split('.').headOption.getOrElse("")
     case None => null
+  }
+
+  private def parseBoolean(column: String): String = Option(column) match {
+    case Some("true") => "1"
+    case Some("false") => "0"
+    case _ => null
   }
 }
