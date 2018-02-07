@@ -13,6 +13,7 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
 
     implicit val executionContext = scala.concurrent.ExecutionContext.Implicits.global
     val executor = AsyncExecutor.default()
+    val timeout = 8.seconds
 
     "create connector" should {
 
@@ -24,7 +25,7 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
         connectionParams += "ssl=false"
 
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = connectionParams)
-        val connection = Await.result(RedshiftConnector(badConnection)(executor), 3.seconds)
+        val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout)
         connection shouldBe Left(ErrorWithMessage("SSL Error"))
       }
 
@@ -34,7 +35,7 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
           override val useHikari: Boolean = true
         }
 
-        val connectorEither = Await.result(RedshiftWithHikari(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds)
+        val connectorEither = Await.result(RedshiftWithHikari(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), timeout)
 
         connectorEither shouldBe a [Right[_, _]]
       }
@@ -44,16 +45,16 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
     "#testConnection" should {
 
       "return ok in happy case" in {
-        val connection = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(executor), 3.seconds).toOption.get
-        val result = Await.result(connection.testConnection(), 3.seconds)
+        val connection = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(executor), timeout).toOption.get
+        val result = Await.result(connection.testConnection(), timeout)
         result shouldBe Right()
         connection.close()
       }
 
       "return error if cant connect" in {
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(host = "asd.asd.asd")
-        val connection = Await.result(RedshiftConnector(badConnection)(executor), 3.seconds).toOption.get
-        val result = Await.result(connection.testConnection(), 3.seconds)
+        val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout).toOption.get
+        val result = Await.result(connection.testConnection(), timeout)
         result shouldBe Left(ErrorWithMessage("Cannot connect to the sql server"))
       }
 

@@ -3,6 +3,8 @@ package com.emarsys.rdb.connector.redshift
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
+import com.emarsys.rdb.connector.common.models.SimpleSelect
+import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import com.emarsys.rdb.connector.redshift.utils.SelectDbInitHelper
 import com.emarsys.rdb.connector.test.SimpleSelectItSpec
 
@@ -17,6 +19,17 @@ class RedshiftSimpleSelectItSpec extends TestKit(ActorSystem()) with SimpleSelec
   override def afterAll(): Unit = {
     system.terminate()
     super.afterAll()
+  }
+
+  "list table values with EQUAL" in {
+    val simpleSelect = SimpleSelect(AllField, TableName(aTableName), where = Some(EqualToValue(FieldName("A2"), Value("3"))))
+
+    val result = getSimpleSelectResult(simpleSelect)
+
+    checkResultWithoutRowOrder(result, Seq(
+      Seq("A1", "A2", "A3"),
+      Seq("v3", "3", "1")
+    ))
   }
 
 }
