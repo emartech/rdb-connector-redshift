@@ -21,7 +21,8 @@ trait SelectDbInitHelper {
       s"""CREATE TABLE "$aTableName" (
          |    A1 varchar(255) NOT NULL UNIQUE,
          |    A2 int,
-         |    A3 boolean
+         |    A3 boolean,
+         |    PRIMARY KEY (A1)
          |);""".stripMargin
 
     val createBTableSql =

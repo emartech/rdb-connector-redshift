@@ -37,10 +37,7 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpe
     "return result" in {
       val result = getStreamResult(connector.analyzeRawSelect(simpleSelect))
 
-      result shouldEqual Seq(
-        Seq("QUERY PLAN"),
-        Seq(s"""XN Result  (cost=0.00..0.01 rows=1 width=0)""")
-      )
+      result.headOption shouldEqual Some(Seq("QUERY PLAN"))
     }
   }
 

@@ -22,11 +22,8 @@ trait RedshiftRawDataManipulation {
     } else {
       val table = TableName(tableName).toSql
       val queries = definitions.map { definition =>
-
         val setPart = createSetQueryPart(definition.update)
-
         val wherePart = createConditionQueryPart(definition.search).toSql
-
         sqlu"UPDATE #$table SET #$setPart WHERE #$wherePart"
       }
 
@@ -42,13 +39,7 @@ trait RedshiftRawDataManipulation {
     if(definitions.isEmpty) {
       Future.successful(Right(0))
     } else {
-      val table = TableName(tableName).toSql
-
-      val fields = definitions.head.keySet.toSeq
-      val fieldList = fields.map(FieldName(_).toSql).mkString("(",",",")")
-      val valueList = makeSqlValueList(orderValues(definitions, fields))
-
-      val query = sqlu"INSERT INTO #$table #$fieldList VALUES #$valueList"
+      val query = createInsertQuery(tableName, definitions)
 
       db.run(query)
         .map(result => Right(result))
@@ -58,13 +49,35 @@ trait RedshiftRawDataManipulation {
     }
   }
 
+  override def rawUpsert(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = {
+    if (definitions.isEmpty) {
+      Future.successful(Right(0))
+    } else {
+      getPrimaryKeyFields(tableName).flatMap((primaryKeyFields: Seq[String]) => {
+        if (primaryKeyFields.isEmpty) {
+          rawInsertData(tableName, definitions)
+        } else {
+
+          val primaryKeyDefinitions = filterPrivateKeyDefinitions(primaryKeyFields, definitions)
+          val query = (for {
+            deleteCount <- createDeleteQuery(tableName, primaryKeyDefinitions)
+            insertCount <- createInsertQuery(tableName, definitions)
+          } yield deleteCount + insertCount).transactionally
+
+          db.run(query).map(Right(_))
+        }
+      }).recover {
+        case ex =>
+          Left(ErrorWithMessage(ex.toString))
+      }
+    }
+  }
+
   override def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = {
     if (criteria.isEmpty) {
       Future.successful(Right(0))
     } else {
-      val table = TableName(tableName).toSql
-      val condition = Or(criteria.map(createConditionQueryPart)).toSql
-      val query = sqlu"DELETE FROM #$table WHERE #$condition"
+      val query = createDeleteQuery(tableName, criteria)
 
       db.run(query)
         .map(result => Right(result))
@@ -149,4 +162,47 @@ trait RedshiftRawDataManipulation {
         }
     }.mkString(", ")
   }
+
+  private def filterPrivateKeyDefinitions(primaryKeyFields: Seq[String], definitions: Seq[Record]): Seq[Record] = {
+    convertToLowerCaseFieldNames(definitions)
+      .map(_.filterKeys(primaryKeyFields.contains))
+  }
+
+  private def convertToLowerCaseFieldNames(definitions: Seq[Record]): Seq[Record] = {
+    definitions.map(_.map { case (k, v) => (k.toLowerCase, v) })
+  }
+
+  private def createInsertQuery(tableName: String, definitions: Seq[Record]) = {
+    val table = TableName(tableName).toSql
+
+    val fields = definitions.head.keySet.toSeq
+    val fieldList = fields.map(FieldName(_).toSql).mkString("(", ",", ")")
+    val valueList = makeSqlValueList(orderValues(definitions, fields))
+
+    sqlu"INSERT INTO #$table #$fieldList VALUES #$valueList"
+  }
+
+  private def createDeleteQuery(tableName: String, criteria: Seq[Criteria]) = {
+    val table = TableName(tableName).toSql
+    val condition = Or(criteria.map(createConditionQueryPart)).toSql
+    sqlu"DELETE FROM #$table WHERE #$condition"
+  }
+
+  private def getPrimaryKeyFields(tableName: String): Future[Seq[String]] = {
+    val table = Value(tableName).toSql
+    db.run(sql"""SELECT
+                     f.attname
+                 FROM pg_attribute f
+                     JOIN pg_class c ON c.oid = f.attrelid
+                     JOIN pg_type t ON t.oid = f.atttypid
+                     LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = f.attnum
+                     LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+                     LEFT JOIN pg_constraint p ON p.conrelid = c.oid AND f.attnum = ANY (p.conkey)
+                     LEFT JOIN pg_class AS g ON p.confrelid = g.oid
+                 WHERE c.relkind = 'r'::char
+                     AND c.relname = #$table
+                     AND p.contype = 'p'
+                     AND f.attnum > 0""".as[String])
+  }
+
 }
