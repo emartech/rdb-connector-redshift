@@ -1,6 +1,6 @@
 package com.emarsys.rdb.connector.redshift
 
-import java.util.Properties
+import java.util.{Properties, UUID}
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models._
@@ -13,10 +13,12 @@ import slick.util.AsyncExecutor
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class RedshiftConnector(
                          protected val db: Database,
-                         protected val connectorConfig: RedshiftConnectorConfig
+                         protected val connectorConfig: RedshiftConnectorConfig,
+                         protected val poolName: String
                        )(
                          implicit val executionContext: ExecutionContext
                        )
@@ -30,6 +32,24 @@ class RedshiftConnector(
 
   override def close(): Future[Unit] = {
     db.shutdown
+  }
+
+  override def innerMetrics(): String = {
+    import java.lang.management.ManagementFactory
+    import com.zaxxer.hikari.HikariPoolMXBean
+    import javax.management.{JMX, ObjectName}
+    Try {
+      val mBeanServer = ManagementFactory.getPlatformMBeanServer
+      val poolObjectName = new ObjectName(s"com.zaxxer.hikari:type=Pool ($poolName)")
+      val poolProxy = JMX.newMXBeanProxy(mBeanServer, poolObjectName, classOf[HikariPoolMXBean])
+
+      s"""{
+         |"activeConnections": ${poolProxy.getActiveConnections},
+         |"idleConnections": ${poolProxy.getIdleConnections},
+         |"threadAwaitingConnections": ${poolProxy.getThreadsAwaitingConnection},
+         |"totalConnections": ${poolProxy.getTotalConnections}
+         |}""".stripMargin
+    }.getOrElse(super.innerMetrics)
   }
 }
 
@@ -56,7 +76,7 @@ object RedshiftConnector extends RedshiftConnectorTrait {
 }
 
 trait RedshiftConnectorTrait extends ConnectorCompanion {
-  private val defaultConfig = RedshiftConnectorConfig(
+  private[redshift] val defaultConfig = RedshiftConnectorConfig(
     queryTimeout = 20.minutes,
     streamChunkSize = 5000
   )
@@ -74,6 +94,8 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
 
     if (checkSsl(config.connectionParams)) {
 
+      val poolName = UUID.randomUUID.toString
+
       val db =
         if(!useHikari) {
           Database.forURL(
@@ -86,6 +108,8 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
           )
         } else {
           val customDbConf = ConfigFactory.load()
+            .withValue("redshiftdb.poolName", ConfigValueFactory.fromAnyRef(poolName))
+            .withValue("redshiftdb.registerMbeans", ConfigValueFactory.fromAnyRef(true))
             .withValue("redshiftdb.properties.url", ConfigValueFactory.fromAnyRef(createUrl(config)))
             .withValue("redshiftdb.properties.user", ConfigValueFactory.fromAnyRef(config.dbUser))
             .withValue("redshiftdb.properties.password", ConfigValueFactory.fromAnyRef(config.dbPassword))
@@ -94,7 +118,7 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
           Database.forConfig("redshiftdb", customDbConf)
         }
 
-      Future(Right(new RedshiftConnector(db, connectorConfig)))
+      Future(Right(new RedshiftConnector(db, connectorConfig, poolName)))
 
     } else {
       Future(Left(ErrorWithMessage("SSL Error")))
