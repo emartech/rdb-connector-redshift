@@ -11,7 +11,7 @@ trait RedshiftMetadata {
   self: RedshiftConnector =>
 
   override def listTables(): ConnectorResponse[Seq[TableModel]] = {
-    db.run(sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = 'public';".as[(String, String)])
+    db.run(sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = $schemaName;".as[(String, String)])
       .map(_.map(parseToTableModel))
       .map(Right(_))
       .recover {
@@ -20,7 +20,7 @@ trait RedshiftMetadata {
   }
 
   override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
-    db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = 'public';".as[(String, String)])
+    db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = $schemaName;".as[(String, String)])
       .map(_.map(parseToFiledModel))
       .map(fields => {
         if(fields.isEmpty) {
@@ -43,7 +43,7 @@ trait RedshiftMetadata {
   }
 
   private def listAllFields(): Future[Map[String, Seq[FieldModel]]] = {
-    db.run(sql"SELECT table_name, column_name, data_type FROM SVV_COLUMNS WHERE table_schema = 'public';".as[(String, String, String)])
+    db.run(sql"SELECT table_name, column_name, data_type FROM SVV_COLUMNS WHERE table_schema = $schemaName;".as[(String, String, String)])
       .map(_.groupBy(_._1).mapValues(_.map(x => parseToFiledModel(x._2 -> x._3)).toSeq))
   }
 

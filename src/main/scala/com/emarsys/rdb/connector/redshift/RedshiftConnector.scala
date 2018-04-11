@@ -18,7 +18,8 @@ import scala.util.Try
 class RedshiftConnector(
                          protected val db: Database,
                          protected val connectorConfig: RedshiftConnectorConfig,
-                         protected val poolName: String
+                         protected val poolName: String,
+                         protected val schemaName: String
                        )(
                          implicit val executionContext: ExecutionContext
                        )
@@ -118,7 +119,7 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
           Database.forConfig("redshiftdb", customDbConf)
         }
 
-      Future(Right(new RedshiftConnector(db, connectorConfig, poolName)))
+      Future(Right(new RedshiftConnector(db, connectorConfig, poolName, createSchemaName(config))))
 
     } else {
       Future(Left(ErrorWithMessage("SSL Error")))
@@ -135,6 +136,13 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
     s"jdbc:redshift://${config.host}:${config.port}/${config.dbName}${safeConnectionParams(config.connectionParams)}"
   }
 
+  private def createSchemaName(config: RedshiftConnectionConfig) = {
+    config.connectionParams
+      .split("&").toList
+      .find(_.startsWith("currentSchema="))
+      .flatMap(_.split("=").toList.tail.headOption)
+      .getOrElse("public")
+  }
   private[redshift] def safeConnectionParams(connectionParams: String) = {
     if (connectionParams.startsWith("?") || connectionParams.isEmpty) {
       connectionParams

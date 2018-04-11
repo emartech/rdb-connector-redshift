@@ -130,15 +130,6 @@ trait RedshiftRawDataManipulation {
     }.mkString(", ")
   }
 
-  private def filterPrivateKeyDefinitions(primaryKeyFields: Seq[String], definitions: Seq[Record]): Seq[Record] = {
-    convertToLowerCaseFieldNames(definitions)
-      .map(_.filterKeys(primaryKeyFields.contains))
-  }
-
-  private def convertToLowerCaseFieldNames(definitions: Seq[Record]): Seq[Record] = {
-    definitions.map(_.map { case (k, v) => (k.toLowerCase, v) })
-  }
-
   private def createInsertQuery(tableName: String, definitions: Seq[Record]) = {
     val table = TableName(tableName).toSql
 
@@ -153,23 +144,6 @@ trait RedshiftRawDataManipulation {
     val table = TableName(tableName).toSql
     val condition = Or(criteria.map(createConditionQueryPart)).toSql
     sqlu"DELETE FROM #$table WHERE #$condition"
-  }
-
-  private def getPrimaryKeyFields(tableName: String): Future[Seq[String]] = {
-    val table = Value(tableName).toSql
-    db.run(sql"""SELECT
-                     f.attname
-                 FROM pg_attribute f
-                     JOIN pg_class c ON c.oid = f.attrelid
-                     JOIN pg_type t ON t.oid = f.atttypid
-                     LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = f.attnum
-                     LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
-                     LEFT JOIN pg_constraint p ON p.conrelid = c.oid AND f.attnum = ANY (p.conkey)
-                     LEFT JOIN pg_class AS g ON p.confrelid = g.oid
-                 WHERE c.relkind = 'r'::char
-                     AND c.relname = #$table
-                     AND p.contype = 'p'
-                     AND f.attnum > 0""".as[String])
   }
 
 }
