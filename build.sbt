@@ -27,7 +27,7 @@ libraryDependencies ++= {
     "com.amazon.redshift" %  "redshift-jdbc42"      % "1.2.8.1005",
     "org.scalatest"       %% "scalatest"            % scalaTestV   % Test,
     "com.typesafe.akka"   %% "akka-stream-testkit"  % "2.5.6"      % Test,
-    "com.github.emartech" %  "rdb-connector-test"   % "e4b63d90db" % Test,
+    "com.github.emartech" %  "rdb-connector-test"   % "cc25620083" % Test,
     "com.typesafe.akka"   %% "akka-http-spray-json" % "10.0.7"     % Test,
     "org.mockito"         %  "mockito-core"         % "2.11.0"     % Test
   )
