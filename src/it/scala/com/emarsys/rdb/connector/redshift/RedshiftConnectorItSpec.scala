@@ -1,6 +1,6 @@
 package com.emarsys.rdb.connector.redshift
 
-import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
+import com.emarsys.rdb.connector.common.models.Errors.{ConnectionConfigError, ConnectionError, ErrorWithMessage}
 import com.emarsys.rdb.connector.redshift.utils.TestHelper
 import org.scalatest.{Matchers, WordSpecLike}
 import slick.util.AsyncExecutor
@@ -26,7 +26,7 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
 
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = connectionParams)
         val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout)
-        connection shouldBe Left(ErrorWithMessage("SSL Error"))
+        connection shouldBe Left(ConnectionConfigError("SSL Error"))
       }
 
       "connect ok when hikari enabled" in {
@@ -55,7 +55,8 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(host = "asd.asd.asd")
         val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout).toOption.get
         val result = Await.result(connection.testConnection(), timeout)
-        result shouldBe Left(ErrorWithMessage("Cannot connect to the sql server"))
+        result shouldBe a[Left[_, _]]
+        result.left.get shouldBe a[ConnectionError]
       }
 
     }

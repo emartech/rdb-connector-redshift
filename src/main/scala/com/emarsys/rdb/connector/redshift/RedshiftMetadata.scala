@@ -1,11 +1,11 @@
 package com.emarsys.rdb.connector.redshift
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.Errors.{ErrorWithMessage, TableNotFound}
+import com.emarsys.rdb.connector.common.models.Errors.TableNotFound
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, FullTableModel, TableModel}
+import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.Future
-import slick.jdbc.PostgresProfile.api._
 
 trait RedshiftMetadata {
   self: RedshiftConnector =>
@@ -14,32 +14,29 @@ trait RedshiftMetadata {
     db.run(sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = $schemaName;".as[(String, String)])
       .map(_.map(parseToTableModel))
       .map(Right(_))
-      .recover {
-        case ex => Left(ErrorWithMessage(ex.toString))
-      }
+      .recover(errorHandler())
   }
 
   override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
     db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = $schemaName;".as[(String, String)])
       .map(_.map(parseToFiledModel))
       .map(fields => {
-        if(fields.isEmpty) {
+        if (fields.isEmpty) {
           Left(TableNotFound(tableName))
         } else {
           Right(fields)
         }
       })
-      .recover {
-        case ex => Left(ErrorWithMessage(ex.toString))
-      }
+      .recover(errorHandler())
   }
 
   override def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = {
     val futureMap = listAllFields()
-    for {
+    (for {
       tablesE <- listTables()
       map <- futureMap
-    } yield tablesE.map(makeTablesWithFields(_, map))
+    } yield tablesE.map(makeTablesWithFields(_, map)))
+      .recover(errorHandler())
   }
 
   private def listAllFields(): Future[Map[String, Seq[FieldModel]]] = {

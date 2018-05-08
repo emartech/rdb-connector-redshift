@@ -10,5 +10,6 @@ trait RedshiftIsOptimized {
     listTables()
       .map(_.map(_.exists(_.name == table))
       .flatMap(if(_) Right(true) else Left(TableNotFound(table))))
+      .recover(errorHandler())
   }
 }

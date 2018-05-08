@@ -3,15 +3,14 @@ package com.emarsys.rdb.connector.redshift
 import java.util.{Properties, UUID}
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
+import com.emarsys.rdb.connector.common.models.Errors.ConnectionConfigError
 import com.emarsys.rdb.connector.common.models._
-import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.redshift.RedshiftConnector.{RedshiftConnectionConfig, RedshiftConnectorConfig}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import slick.jdbc.PostgresProfile.api._
 import slick.util.AsyncExecutor
 
-import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -25,6 +24,7 @@ class RedshiftConnector(
                        )
   extends Connector
     with RedshiftTestConnection
+    with RedshiftErrorHandling
     with RedshiftMetadata
     with RedshiftSimpleSelect
     with RedshiftRawSelect
@@ -122,7 +122,7 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
       Future(Right(new RedshiftConnector(db, connectorConfig, poolName, createSchemaName(config))))
 
     } else {
-      Future(Left(ErrorWithMessage("SSL Error")))
+      Future.successful(Left(ConnectionConfigError("SSL Error")))
     }
   }
 

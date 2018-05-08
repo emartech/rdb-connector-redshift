@@ -4,7 +4,6 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.defaults.DefaultSqlWriters
-import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.common.models.SimpleSelect.FieldName
 import slick.jdbc.MySQLProfile.api._
 
@@ -26,7 +25,7 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     val modifiedSql = wrapInExplain(removeEndingSemicolons(rawSql))
     runQueryOnDb(modifiedSql)
       .map(_ => Right())
-      .recover { case ex => Left(ErrorWithMessage(ex.getMessage)) }
+      .recover(errorHandler())
   }
 
   private def runQueryOnDb(modifiedSql: String) = {
@@ -42,7 +41,7 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     streamingQuery(modifiedSql)
   }
 
-  private def runProjectedSelectWith[R](rawSql: String, fields: Seq[String], allowNullFieldValue:Boolean, queryRunner: String => R) = {
+  private def runProjectedSelectWith[R](rawSql: String, fields: Seq[String], allowNullFieldValue: Boolean, queryRunner: String => R) = {
     val fieldList = concatenateProjection(fields)
     val projectedSql = wrapInProjection(rawSql, fieldList)
     val query =
@@ -59,7 +58,7 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     val wrapInExplainThenRunOnDb = wrapInExplain _ andThen runQueryOnDb
     runProjectedSelectWith(rawSql, fields, allowNullFieldValue = true, wrapInExplainThenRunOnDb)
       .map(_ => Right())
-      .recover { case ex => Left(ErrorWithMessage(ex.getMessage)) }
+      .recover(errorHandler())
   }
 
   private def concatenateProjection(fields: Seq[String]) =
