@@ -3,24 +3,24 @@ package com.emarsys.rdb.connector.redshift.utils
 import java.util.Properties
 
 import com.emarsys.rdb.connector.redshift.RedshiftConnector.{RedshiftConnectionConfig, createUrl}
+import slick.jdbc.PostgresProfile.api._
 import slick.util.AsyncExecutor
 
 import scala.concurrent.Future
 
-import slick.jdbc.PostgresProfile.api._
-
 object TestHelper {
+
   import com.typesafe.config.ConfigFactory
 
   val value = ConfigFactory.load().getString("dbconf.host")
 
   lazy val TEST_CONNECTION_CONFIG = RedshiftConnectionConfig(
     host = ConfigFactory.load().getString("dbconf.host"),
-    port= ConfigFactory.load().getInt("dbconf.port"),
-    dbName= ConfigFactory.load().getString("dbconf.dbName"),
-    dbUser= ConfigFactory.load().getString("dbconf.user"),
-    dbPassword= ConfigFactory.load().getString("dbconf.password"),
-    connectionParams= ConfigFactory.load().getString("dbconf.connectionParams")
+    port = ConfigFactory.load().getInt("dbconf.port"),
+    dbName = ConfigFactory.load().getString("dbconf.dbName"),
+    dbUser = ConfigFactory.load().getString("dbconf.user"),
+    dbPassword = ConfigFactory.load().getString("dbconf.password"),
+    connectionParams = ConfigFactory.load().getString("dbconf.connectionParams")
   )
 
   private lazy val executor = AsyncExecutor.default()

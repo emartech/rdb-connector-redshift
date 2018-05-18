@@ -1,9 +1,10 @@
 package com.emarsys.rdb.connector.redshift
 
-import java.util.{Properties, UUID}
+import java.util.UUID
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.Errors.ConnectionConfigError
+import com.emarsys.rdb.connector.common.models.Errors.{ConnectionConfigError, ConnectionError}
+import com.emarsys.rdb.connector.common.models.SimpleSelect.TableName
 import com.emarsys.rdb.connector.common.models._
 import com.emarsys.rdb.connector.redshift.RedshiftConnector.{RedshiftConnectionConfig, RedshiftConnectorConfig}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
@@ -37,6 +38,7 @@ class RedshiftConnector(
 
   override def innerMetrics(): String = {
     import java.lang.management.ManagementFactory
+
     import com.zaxxer.hikari.HikariPoolMXBean
     import javax.management.{JMX, ObjectName}
     Try {
@@ -82,8 +84,6 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
     streamChunkSize = 5000
   )
 
-  val useHikari: Boolean = Config.db.useHikari
-
   def apply(
              config: RedshiftConnectionConfig,
              connectorConfig: RedshiftConnectorConfig = defaultConfig
@@ -97,29 +97,28 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
 
       val poolName = UUID.randomUUID.toString
 
-      val db =
-        if(!useHikari) {
-          Database.forURL(
-            url = createUrl(config),
-            driver = "com.amazon.redshift.jdbc42.Driver",
-            user = config.dbUser,
-            password = config.dbPassword,
-            prop = new Properties(),
-            executor = executor
-          )
-        } else {
-          val customDbConf = ConfigFactory.load()
-            .withValue("redshiftdb.poolName", ConfigValueFactory.fromAnyRef(poolName))
-            .withValue("redshiftdb.registerMbeans", ConfigValueFactory.fromAnyRef(true))
-            .withValue("redshiftdb.properties.url", ConfigValueFactory.fromAnyRef(createUrl(config)))
-            .withValue("redshiftdb.properties.user", ConfigValueFactory.fromAnyRef(config.dbUser))
-            .withValue("redshiftdb.properties.password", ConfigValueFactory.fromAnyRef(config.dbPassword))
-            .withValue("redshiftdb.properties.driver", ConfigValueFactory.fromAnyRef("com.amazon.redshift.jdbc42.Driver"))
+      val currentSchema = createSchemaName(config)
 
-          Database.forConfig("redshiftdb", customDbConf)
+      import com.emarsys.rdb.connector.common.defaults.SqlWriter._
+      import com.emarsys.rdb.connector.common.defaults.DefaultSqlWriters._
+      val setSchemaQuery = s"set search_path to ${TableName(currentSchema).toSql}"
+
+      val customDbConf = ConfigFactory.load()
+        .withValue("redshiftdb.poolName", ConfigValueFactory.fromAnyRef(poolName))
+        .withValue("redshiftdb.connectionInitSql", ConfigValueFactory.fromAnyRef(setSchemaQuery))
+        .withValue("redshiftdb.registerMbeans", ConfigValueFactory.fromAnyRef(true))
+        .withValue("redshiftdb.properties.url", ConfigValueFactory.fromAnyRef(createUrl(config)))
+        .withValue("redshiftdb.properties.user", ConfigValueFactory.fromAnyRef(config.dbUser))
+        .withValue("redshiftdb.properties.password", ConfigValueFactory.fromAnyRef(config.dbPassword))
+        .withValue("redshiftdb.properties.driver", ConfigValueFactory.fromAnyRef("com.amazon.redshift.jdbc42.Driver"))
+
+      val db = Database.forConfig("redshiftdb", customDbConf)
+
+      db.run(sql"select 1".as[Int])
+        .map(_ => Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema)))
+        .recover {
+          case ex => Left(ConnectionError(ex))
         }
-
-      Future(Right(new RedshiftConnector(db, connectorConfig, poolName, createSchemaName(config))))
 
     } else {
       Future.successful(Left(ConnectionConfigError("SSL Error")))

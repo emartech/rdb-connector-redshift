@@ -1,12 +1,12 @@
 package com.emarsys.rdb.connector.redshift
 
-import com.emarsys.rdb.connector.common.models.Errors.{ConnectionConfigError, ConnectionError, ErrorWithMessage}
+import com.emarsys.rdb.connector.common.models.Errors.{ConnectionConfigError, ConnectionError}
 import com.emarsys.rdb.connector.redshift.utils.TestHelper
 import org.scalatest.{Matchers, WordSpecLike}
 import slick.util.AsyncExecutor
 
-import scala.concurrent.{Await, Future}
-import concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
   "RedshiftConnector" when {
@@ -29,13 +29,9 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
         connection shouldBe Left(ConnectionConfigError("SSL Error"))
       }
 
-      "connect ok when hikari enabled" in {
+      "connect ok" in {
 
-        object RedshiftWithHikari extends RedshiftConnectorTrait {
-          override val useHikari: Boolean = true
-        }
-
-        val connectorEither = Await.result(RedshiftWithHikari(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), timeout)
+        val connectorEither = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), timeout)
 
         connectorEither shouldBe a [Right[_, _]]
       }
@@ -53,10 +49,9 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
 
       "return error if cant connect" in {
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(host = "asd.asd.asd")
-        val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout).toOption.get
-        val result = Await.result(connection.testConnection(), timeout)
-        result shouldBe a[Left[_, _]]
-        result.left.get shouldBe a[ConnectionError]
+        val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout)
+        connection shouldBe a[Left[_, _]]
+        connection.left.get shouldBe a[ConnectionError]
       }
 
     }
