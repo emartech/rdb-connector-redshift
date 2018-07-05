@@ -117,7 +117,9 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
       db.run(sql"select 1".as[Int])
         .map(_ => Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema)))
         .recover {
-          case ex => Left(ConnectionError(ex))
+          case ex =>
+            db.shutdown
+            Left(ConnectionError(ex))
         }
 
     } else {
