@@ -114,13 +114,16 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
 
       val db = Database.forConfig("redshiftdb", customDbConf)
 
-      db.run(sql"select 1".as[Int])
-        .map(_ => Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema)))
-        .recover {
-          case ex =>
-            db.shutdown
-            Left(ConnectionError(ex))
-        }
+      db.run(sql"select 1".as[Int]).map{ _ =>
+        Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema))
+      }.recover {
+        case ex => Left(ConnectionError(ex))
+      }.map {
+        case Left(e) =>
+          db.shutdown
+          Left(e)
+        case r => r
+      }
 
     } else {
       Future.successful(Left(ConnectionConfigError("SSL Error")))
