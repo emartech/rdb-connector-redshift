@@ -8,6 +8,7 @@ import com.emarsys.rdb.connector.common.models.SimpleSelect.FieldName
 import slick.jdbc.MySQLProfile.api._
 
 import scala.annotation.tailrec
+import scala.concurrent.duration._
 
 trait RedshiftRawSelect extends RedshiftStreamingQuery {
   self: RedshiftConnector =>
@@ -15,10 +16,10 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
   import DefaultSqlWriters._
   import com.emarsys.rdb.connector.common.defaults.SqlWriter._
 
-  override def rawSelect(rawSql: String, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+  override def rawSelect(rawSql: String, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val query = removeEndingSemicolons(rawSql)
     val limitedQuery = limit.fold(query) { l => wrapInLimit(query, l) }
-    streamingQuery(limitedQuery)
+    streamingQuery(timeout)(limitedQuery)
   }
 
   override def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = {
@@ -38,7 +39,7 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
 
   override def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val modifiedSql = wrapInExplain(removeEndingSemicolons(rawSql))
-    streamingQuery(modifiedSql)
+    streamingQuery(5.seconds)(modifiedSql)
   }
 
   private def runProjectedSelectWith[R](rawSql: String, fields: Seq[String], limit: Option[Int], allowNullFieldValue: Boolean, queryRunner: String => R) = {
@@ -52,8 +53,8 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     queryRunner(limitedQuery)
   }
 
-  override def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], allowNullFieldValue: Boolean): ConnectorResponse[Source[Seq[String], NotUsed]] =
-    runProjectedSelectWith(rawSql, fields, limit, allowNullFieldValue, streamingQuery)
+  override def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], timeout: FiniteDuration, allowNullFieldValue: Boolean): ConnectorResponse[Source[Seq[String], NotUsed]] =
+    runProjectedSelectWith(rawSql, fields, limit, allowNullFieldValue, streamingQuery(timeout))
 
   override def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = {
     val wrapInExplainThenRunOnDb = wrapInExplain _ andThen runQueryOnDb

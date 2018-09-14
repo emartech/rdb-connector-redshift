@@ -9,15 +9,19 @@ import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.{GetResult, PositionedResult}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 trait RedshiftStreamingQuery {
   self: RedshiftConnector =>
 
-  protected def streamingQuery(query: String): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+  protected def streamingQuery(timeout: FiniteDuration)(query: String): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val sql = sql"#$query"
       .as(resultConverter)
       .transactionally
-      .withStatementParameters(fetchSize = connectorConfig.streamChunkSize)
+      .withStatementParameters(
+        fetchSize = connectorConfig.streamChunkSize,
+        statementInit = _.setQueryTimeout(timeout.toSeconds.toInt)
+      )
 
     val publisher = db.stream(sql)
     val dbSource = Source

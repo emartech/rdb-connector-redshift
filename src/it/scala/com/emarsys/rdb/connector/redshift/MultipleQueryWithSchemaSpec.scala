@@ -16,6 +16,7 @@ class MultipleQueryWithSchemaSpec extends TestKit(ActorSystem()) with WordSpecLi
   val uuid = uuidGenerate
   val tableName = s"multiple_query_table_$uuid"
 
+  val queryTimeout = 5.seconds
   val awaitTimeout = 15.seconds
   implicit val materializer: Materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
@@ -43,7 +44,7 @@ class MultipleQueryWithSchemaSpec extends TestKit(ActorSystem()) with WordSpecLi
         val slowQuery = s"""SELECT A1 FROM "$aTableName";"""
 
         val queries = (0 until 10).map { _ =>
-          connector.rawSelect(slowQuery, None).flatMap {
+          connector.rawSelect(slowQuery, None, queryTimeout).flatMap {
             case Left(ex) => Future.successful(Left(ex))
             case Right(source) => source.runWith(Sink.seq).map(Right(_)).recover {
               case error => Left(ConnectionError(error))
