@@ -1,7 +1,4 @@
-# Rdb - connector - redshift
-
-[ ![Codeship Status for emartech/rdb-connector-redshift](https://app.codeship.com/projects/b0a10590-9c55-0135-18fe-3ec7b5d83301/status?branch=master)](https://app.codeship.com/projects/252931)
-[![](https://jitpack.io/v/emartech/rdb-connector-redshift.svg)](https://jitpack.io/#emartech/rdb-connector-redshift)
+# Rdb - connector - redshift [![Codeship Status for emartech/rdb-connector-redshift](https://app.codeship.com/projects/b0a10590-9c55-0135-18fe-3ec7b5d83301/status?branch=master)](https://app.codeship.com/projects/252931) [![](https://jitpack.io/v/emartech/rdb-connector-redshift.svg)](https://jitpack.io/#emartech/rdb-connector-redshift)
 
 ## Definitions:
 
