@@ -20,9 +20,8 @@ class RedshiftConnector(
     protected val connectorConfig: RedshiftConnectorConfig,
     protected val poolName: String,
     protected val schemaName: String
-)(
-    implicit val executionContext: ExecutionContext
-) extends Connector
+)(implicit val executionContext: ExecutionContext)
+    extends Connector
     with RedshiftTestConnection
     with RedshiftErrorHandling
     with RedshiftMetadata
@@ -85,38 +84,32 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
 
   def apply(
       config: RedshiftConnectionConfig,
-      connectorConfig: RedshiftConnectorConfig = defaultConfig
-  )(
-      executor: AsyncExecutor
-  )(
-      implicit executionContext: ExecutionContext
-  ): ConnectorResponse[RedshiftConnector] = {
-
+      connectorConfig: RedshiftConnectorConfig = defaultConfig,
+      configPath: String = "redshiftdb"
+  )(executor: AsyncExecutor)(implicit executionContext: ExecutionContext): ConnectorResponse[RedshiftConnector] = {
     if (checkSsl(config.connectionParams)) {
-
-      val poolName = UUID.randomUUID.toString
-
+      val poolName      = UUID.randomUUID.toString
       val currentSchema = createSchemaName(config)
 
-      import com.emarsys.rdb.connector.common.defaults.SqlWriter._
       import com.emarsys.rdb.connector.common.defaults.DefaultSqlWriters._
+      import com.emarsys.rdb.connector.common.defaults.SqlWriter._
       val setSchemaQuery = s"set search_path to ${TableName(currentSchema).toSql}"
 
       val customDbConf = ConfigFactory
         .load()
-        .withValue("redshiftdb.poolName", ConfigValueFactory.fromAnyRef(poolName))
-        .withValue("redshiftdb.connectionInitSql", ConfigValueFactory.fromAnyRef(setSchemaQuery))
-        .withValue("redshiftdb.registerMbeans", ConfigValueFactory.fromAnyRef(true))
-        .withValue("redshiftdb.properties.url", ConfigValueFactory.fromAnyRef(createUrl(config)))
-        .withValue("redshiftdb.properties.user", ConfigValueFactory.fromAnyRef(config.dbUser))
-        .withValue("redshiftdb.properties.password", ConfigValueFactory.fromAnyRef(config.dbPassword))
-        .withValue("redshiftdb.properties.driver", ConfigValueFactory.fromAnyRef("com.amazon.redshift.jdbc42.Driver"))
+        .getConfig(configPath)
+        .withValue("poolName", ConfigValueFactory.fromAnyRef(poolName))
+        .withValue("connectionInitSql", ConfigValueFactory.fromAnyRef(setSchemaQuery))
+        .withValue("registerMbeans", ConfigValueFactory.fromAnyRef(true))
+        .withValue("properties.url", ConfigValueFactory.fromAnyRef(createUrl(config)))
+        .withValue("properties.user", ConfigValueFactory.fromAnyRef(config.dbUser))
+        .withValue("properties.password", ConfigValueFactory.fromAnyRef(config.dbPassword))
+        .withValue("properties.driver", ConfigValueFactory.fromAnyRef("com.amazon.redshift.jdbc42.Driver"))
 
-      val db = Database.forConfig("redshiftdb", customDbConf)
+      val db = Database.forConfig("", customDbConf)
 
       db.run(sql"select 1".as[Int])
-        .map { _ =>
-          Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema))
+        .map { _ => Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema))
         }
         .recover {
           case ex => Left(ConnectionError(ex))
