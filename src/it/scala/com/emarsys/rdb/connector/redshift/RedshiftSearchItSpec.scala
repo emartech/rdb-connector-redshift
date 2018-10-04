@@ -14,7 +14,8 @@ import scala.concurrent.duration._
 class RedshiftSearchItSpec extends TestKit(ActorSystem()) with SearchItSpec {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val connector: Connector = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds).right.get
+  val connector: Connector =
+    Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds).right.get
 
   override implicit val materializer: Materializer = ActorMaterializer()
 
@@ -63,7 +64,15 @@ class RedshiftSearchWithSchemaItSpec extends TestKit(ActorSystem()) with SearchI
 
   val schema = "ittestschema"
 
-  val connector: Connector = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = s"currentSchema=$schema"))(AsyncExecutor.default()), 5.seconds).right.get
+  val connector: Connector = Await
+    .result(
+      RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = s"currentSchema=$schema"))(
+        AsyncExecutor.default()
+      ),
+      5.seconds
+    )
+    .right
+    .get
 
   override implicit val materializer: Materializer = ActorMaterializer()
 

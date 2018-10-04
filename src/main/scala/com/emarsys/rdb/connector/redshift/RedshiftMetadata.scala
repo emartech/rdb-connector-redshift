@@ -11,14 +11,20 @@ trait RedshiftMetadata {
   self: RedshiftConnector =>
 
   override def listTables(): ConnectorResponse[Seq[TableModel]] = {
-    db.run(sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = $schemaName;".as[(String, String)])
+    db.run(
+        sql"SELECT DISTINCT table_name, table_type  FROM SVV_TABLES WHERE table_schema = $schemaName;"
+          .as[(String, String)]
+      )
       .map(_.map(parseToTableModel))
       .map(Right(_))
       .recover(errorHandler())
   }
 
   override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
-    db.run(sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = $schemaName;".as[(String, String)])
+    db.run(
+        sql"SELECT column_name, data_type FROM SVV_COLUMNS WHERE table_name = $tableName AND table_schema = $schemaName;"
+          .as[(String, String)]
+      )
       .map(_.map(parseToFiledModel))
       .map(fields => {
         if (fields.isEmpty) {
@@ -34,17 +40,23 @@ trait RedshiftMetadata {
     val futureMap = listAllFields()
     (for {
       tablesE <- listTables()
-      map <- futureMap
+      map     <- futureMap
     } yield tablesE.map(makeTablesWithFields(_, map)))
       .recover(errorHandler())
   }
 
   private def listAllFields(): Future[Map[String, Seq[FieldModel]]] = {
-    db.run(sql"SELECT table_name, column_name, data_type FROM SVV_COLUMNS WHERE table_schema = $schemaName;".as[(String, String, String)])
+    db.run(
+        sql"SELECT table_name, column_name, data_type FROM SVV_COLUMNS WHERE table_schema = $schemaName;"
+          .as[(String, String, String)]
+      )
       .map(_.groupBy(_._1).mapValues(_.map(x => parseToFiledModel(x._2 -> x._3)).toSeq))
   }
 
-  private def makeTablesWithFields(tableList: Seq[TableModel], tableFieldMap: Map[String, Seq[FieldModel]]): Seq[FullTableModel] = {
+  private def makeTablesWithFields(
+      tableList: Seq[TableModel],
+      tableFieldMap: Map[String, Seq[FieldModel]]
+  ): Seq[FullTableModel] = {
     tableList
       .map(table => (table, tableFieldMap.get(table.name)))
       .collect {
@@ -62,7 +74,7 @@ trait RedshiftMetadata {
 
   private def isTableTypeView(tableType: String): Boolean = tableType match {
     case "VIEW" => true
-    case _ => false
+    case _      => false
   }
 
 }

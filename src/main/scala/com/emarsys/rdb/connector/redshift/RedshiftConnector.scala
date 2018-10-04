@@ -16,14 +16,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class RedshiftConnector(
-                         protected val db: Database,
-                         protected val connectorConfig: RedshiftConnectorConfig,
-                         protected val poolName: String,
-                         protected val schemaName: String
-                       )(
-                         implicit val executionContext: ExecutionContext
-                       )
-  extends Connector
+    protected val db: Database,
+    protected val connectorConfig: RedshiftConnectorConfig,
+    protected val poolName: String,
+    protected val schemaName: String
+)(
+    implicit val executionContext: ExecutionContext
+) extends Connector
     with RedshiftTestConnection
     with RedshiftErrorHandling
     with RedshiftMetadata
@@ -42,9 +41,9 @@ class RedshiftConnector(
     import com.zaxxer.hikari.HikariPoolMXBean
     import javax.management.{JMX, ObjectName}
     Try {
-      val mBeanServer = ManagementFactory.getPlatformMBeanServer
+      val mBeanServer    = ManagementFactory.getPlatformMBeanServer
       val poolObjectName = new ObjectName(s"com.zaxxer.hikari:type=Pool ($poolName)")
-      val poolProxy = JMX.newMXBeanProxy(mBeanServer, poolObjectName, classOf[HikariPoolMXBean])
+      val poolProxy      = JMX.newMXBeanProxy(mBeanServer, poolObjectName, classOf[HikariPoolMXBean])
 
       s"""{
          |"activeConnections": ${poolProxy.getActiveConnections},
@@ -59,22 +58,22 @@ class RedshiftConnector(
 object RedshiftConnector extends RedshiftConnectorTrait {
 
   case class RedshiftConnectionConfig(
-                                       host: String,
-                                       port: Int,
-                                       dbName: String,
-                                       dbUser: String,
-                                       dbPassword: String,
-                                       connectionParams: String
-                                     ) extends ConnectionConfig {
+      host: String,
+      port: Int,
+      dbName: String,
+      dbUser: String,
+      dbPassword: String,
+      connectionParams: String
+  ) extends ConnectionConfig {
     override def toCommonFormat: CommonConnectionReadableData = {
       CommonConnectionReadableData("redshift", s"$host:$port", dbName, dbUser)
     }
   }
 
   case class RedshiftConnectorConfig(
-                                      queryTimeout: FiniteDuration,
-                                      streamChunkSize: Int
-                                    )
+      queryTimeout: FiniteDuration,
+      streamChunkSize: Int
+  )
 
 }
 
@@ -85,13 +84,13 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
   )
 
   def apply(
-             config: RedshiftConnectionConfig,
-             connectorConfig: RedshiftConnectorConfig = defaultConfig
-           )(
-             executor: AsyncExecutor
-           )(
-             implicit executionContext: ExecutionContext
-           ): ConnectorResponse[RedshiftConnector] = {
+      config: RedshiftConnectionConfig,
+      connectorConfig: RedshiftConnectorConfig = defaultConfig
+  )(
+      executor: AsyncExecutor
+  )(
+      implicit executionContext: ExecutionContext
+  ): ConnectorResponse[RedshiftConnector] = {
 
     if (checkSsl(config.connectionParams)) {
 
@@ -103,7 +102,8 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
       import com.emarsys.rdb.connector.common.defaults.DefaultSqlWriters._
       val setSchemaQuery = s"set search_path to ${TableName(currentSchema).toSql}"
 
-      val customDbConf = ConfigFactory.load()
+      val customDbConf = ConfigFactory
+        .load()
         .withValue("redshiftdb.poolName", ConfigValueFactory.fromAnyRef(poolName))
         .withValue("redshiftdb.connectionInitSql", ConfigValueFactory.fromAnyRef(setSchemaQuery))
         .withValue("redshiftdb.registerMbeans", ConfigValueFactory.fromAnyRef(true))
@@ -114,16 +114,19 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
 
       val db = Database.forConfig("redshiftdb", customDbConf)
 
-      db.run(sql"select 1".as[Int]).map{ _ =>
-        Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema))
-      }.recover {
-        case ex => Left(ConnectionError(ex))
-      }.map {
-        case Left(e) =>
-          db.shutdown
-          Left(e)
-        case r => r
-      }
+      db.run(sql"select 1".as[Int])
+        .map { _ =>
+          Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema))
+        }
+        .recover {
+          case ex => Left(ConnectionError(ex))
+        }
+        .map {
+          case Left(e) =>
+            db.shutdown
+            Left(e)
+          case r => r
+        }
 
     } else {
       Future.successful(Left(ConnectionConfigError("SSL Error")))
@@ -142,7 +145,8 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
 
   private def createSchemaName(config: RedshiftConnectionConfig) = {
     config.connectionParams
-      .split("&").toList
+      .split("&")
+      .toList
       .find(_.startsWith("currentSchema="))
       .flatMap(_.split("=").toList.tail.headOption)
       .getOrElse("public")

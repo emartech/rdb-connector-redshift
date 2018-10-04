@@ -23,7 +23,10 @@ class RedshiftDeleteItSpec extends TestKit(ActorSystem()) with DeleteItSpec with
 
 }
 
-class RedshiftDeleteWithCurrentSchemaItSpec extends TestKit(ActorSystem()) with DeleteItSpec with SelectDbWithSchemaInitHelper {
+class RedshiftDeleteWithCurrentSchemaItSpec
+    extends TestKit(ActorSystem())
+    with DeleteItSpec
+    with SelectDbWithSchemaInitHelper {
   val aTableName: String = tableName
   val bTableName: String = s"temp_$uuid"
 
@@ -37,4 +40,3 @@ class RedshiftDeleteWithCurrentSchemaItSpec extends TestKit(ActorSystem()) with 
   }
 
 }
-

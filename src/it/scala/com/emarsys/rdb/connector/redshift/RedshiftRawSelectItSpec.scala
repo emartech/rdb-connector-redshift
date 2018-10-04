@@ -10,7 +10,13 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
-class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpec with SelectDbInitHelper with WordSpecLike  with Matchers with BeforeAndAfterAll {
+class RedshiftRawSelectItSpec
+    extends TestKit(ActorSystem())
+    with RawSelectItSpec
+    with SelectDbInitHelper
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
   implicit val materializer: Materializer = ActorMaterializer()
 
@@ -28,8 +34,8 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpe
     initDb()
   }
 
-  override val simpleSelect = s"""SELECT * FROM "$aTableName";"""
-  override val badSimpleSelect = s"""SELECT * ForM "$aTableName""""
+  override val simpleSelect            = s"""SELECT * FROM "$aTableName";"""
+  override val badSimpleSelect         = s"""SELECT * ForM "$aTableName""""
   override val simpleSelectNoSemicolon = s"""SELECT * FROM "$aTableName""""
 
   "#analyzeRawSelect" should {
@@ -42,7 +48,13 @@ class RedshiftRawSelectItSpec extends TestKit(ActorSystem()) with RawSelectItSpe
 
 }
 
-class RedshiftRawSelectWithSchemaItSpec extends TestKit(ActorSystem()) with RawSelectItSpec with SelectDbWithSchemaInitHelper with WordSpecLike  with Matchers with BeforeAndAfterAll {
+class RedshiftRawSelectWithSchemaItSpec
+    extends TestKit(ActorSystem())
+    with RawSelectItSpec
+    with SelectDbWithSchemaInitHelper
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
   implicit val materializer: Materializer = ActorMaterializer()
 
@@ -60,8 +72,8 @@ class RedshiftRawSelectWithSchemaItSpec extends TestKit(ActorSystem()) with RawS
     initDb()
   }
 
-  override val simpleSelect = s"""SELECT * FROM "$aTableName";"""
-  override val badSimpleSelect = s"""SELECT * ForM "$aTableName""""
+  override val simpleSelect            = s"""SELECT * FROM "$aTableName";"""
+  override val badSimpleSelect         = s"""SELECT * ForM "$aTableName""""
   override val simpleSelectNoSemicolon = s"""SELECT * FROM "$aTableName""""
 
   "#analyzeRawSelect" should {

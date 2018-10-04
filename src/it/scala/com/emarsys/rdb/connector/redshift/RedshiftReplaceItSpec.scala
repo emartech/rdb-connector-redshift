@@ -23,7 +23,10 @@ class RedshiftReplaceItSpec extends TestKit(ActorSystem()) with ReplaceItSpec wi
 
 }
 
-class RedshiftReplaceWithSchemaItSpec extends TestKit(ActorSystem()) with ReplaceItSpec with SelectDbWithSchemaInitHelper {
+class RedshiftReplaceWithSchemaItSpec
+    extends TestKit(ActorSystem())
+    with ReplaceItSpec
+    with SelectDbWithSchemaInitHelper {
   val aTableName: String = tableName
   val bTableName: String = s"temp_$uuid"
 
@@ -37,4 +40,3 @@ class RedshiftReplaceWithSchemaItSpec extends TestKit(ActorSystem()) with Replac
   }
 
 }
-

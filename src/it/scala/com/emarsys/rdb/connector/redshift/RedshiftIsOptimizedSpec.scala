@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 class RedshiftIsOptimizedSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   implicit val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  val uuid = UUID.randomUUID().toString
+  val uuid      = UUID.randomUUID().toString
   val tableName = s"is_optimized_table_$uuid"
 
   override def beforeAll(): Unit = {
@@ -26,7 +26,8 @@ class RedshiftIsOptimizedSpec extends WordSpecLike with Matchers with BeforeAndA
     connector.close()
   }
 
-  val connector: Connector = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 15.seconds).right.get
+  val connector: Connector =
+    Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 15.seconds).right.get
 
   def initDb(): Unit = {
     val createTableSql =

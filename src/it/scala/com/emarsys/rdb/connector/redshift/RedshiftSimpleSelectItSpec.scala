@@ -50,21 +50,27 @@ class RedshiftSimpleSelectItSpec extends TestKit(ActorSystem()) with SimpleSelec
     super.cleanUpDb()
   }
 
-
   "list table values with EQUAL" in {
-    val simpleSelect = SimpleSelect(AllField, TableName(aTableName), where = Some(EqualToValue(FieldName("A2"), Value("3"))))
+    val simpleSelect =
+      SimpleSelect(AllField, TableName(aTableName), where = Some(EqualToValue(FieldName("A2"), Value("3"))))
 
     val result = getSimpleSelectResult(simpleSelect)
 
-    checkResultWithoutRowOrder(result, Seq(
-      Seq("A1", "A2", "A3"),
-      Seq("v3", "3", "1")
-    ))
+    checkResultWithoutRowOrder(
+      result,
+      Seq(
+        Seq("A1", "A2", "A3"),
+        Seq("v3", "3", "1")
+      )
+    )
   }
 
 }
 
-class RedshiftSimpleSelectWithSchemaItSpec extends TestKit(ActorSystem()) with SimpleSelectItSpec with SelectDbWithSchemaInitHelper {
+class RedshiftSimpleSelectWithSchemaItSpec
+    extends TestKit(ActorSystem())
+    with SimpleSelectItSpec
+    with SelectDbWithSchemaInitHelper {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override implicit val materializer: Materializer = ActorMaterializer()
@@ -103,16 +109,19 @@ class RedshiftSimpleSelectWithSchemaItSpec extends TestKit(ActorSystem()) with S
     super.cleanUpDb()
   }
 
-
   "list table values with EQUAL" in {
-    val simpleSelect = SimpleSelect(AllField, TableName(aTableName), where = Some(EqualToValue(FieldName("A2"), Value("3"))))
+    val simpleSelect =
+      SimpleSelect(AllField, TableName(aTableName), where = Some(EqualToValue(FieldName("A2"), Value("3"))))
 
     val result = getSimpleSelectResult(simpleSelect)
 
-    checkResultWithoutRowOrder(result, Seq(
-      Seq("A1", "A2", "A3"),
-      Seq("v3", "3", "1")
-    ))
+    checkResultWithoutRowOrder(
+      result,
+      Seq(
+        Seq("A1", "A2", "A3"),
+        Seq("v3", "3", "1")
+      )
+    )
   }
 
 }

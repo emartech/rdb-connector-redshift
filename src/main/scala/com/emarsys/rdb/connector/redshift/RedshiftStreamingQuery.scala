@@ -14,7 +14,9 @@ import scala.concurrent.duration.FiniteDuration
 trait RedshiftStreamingQuery {
   self: RedshiftConnector =>
 
-  protected def streamingQuery(timeout: FiniteDuration)(query: String): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+  protected def streamingQuery(
+      timeout: FiniteDuration
+  )(query: String): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val sql = sql"#$query"
       .as(resultConverter)
       .transactionally
@@ -28,16 +30,15 @@ trait RedshiftStreamingQuery {
       .fromPublisher(publisher)
       .idleTimeout(connectorConfig.queryTimeout)
       .initialTimeout(connectorConfig.queryTimeout)
-      .statefulMapConcat {
-        () =>
-          var first = true
-          (data: (Seq[String], Seq[String])) =>
-            if (first) {
-              first = false
-              List(data._1, data._2)
-            } else {
-              List(data._2)
-            }
+      .statefulMapConcat { () =>
+        var first = true
+        (data: (Seq[String], Seq[String])) =>
+          if (first) {
+            first = false
+            List(data._1, data._2)
+          } else {
+            List(data._2)
+          }
       }
 
     Future.successful(Right(dbSource))
@@ -55,8 +56,8 @@ trait RedshiftStreamingQuery {
     (0 until result.numColumns).map { i =>
       columnTypes(i) match {
         case Types.TIMESTAMP => parseDateTime(result.nextString())
-        case Types.BIT => parseBoolean(result.nextString())
-        case _ => result.nextString()
+        case Types.BIT       => parseBoolean(result.nextString())
+        case _               => result.nextString()
       }
     }
   }
@@ -66,12 +67,12 @@ trait RedshiftStreamingQuery {
 
   private def parseDateTime(column: String): String = Option(column) match {
     case Some(s) => s.split('.').headOption.getOrElse("")
-    case None => null
+    case None    => null
   }
 
   private def parseBoolean(column: String): String = Option(column) match {
-    case Some("true") => "1"
+    case Some("true")  => "1"
     case Some("false") => "0"
-    case _ => null
+    case _             => null
   }
 }

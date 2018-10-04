@@ -12,13 +12,19 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecL
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class MultipleQueryWithSchemaSpec extends TestKit(ActorSystem()) with WordSpecLike with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with SelectDbWithSchemaInitHelper {
-  val uuid = uuidGenerate
+class MultipleQueryWithSchemaSpec
+    extends TestKit(ActorSystem())
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with SelectDbWithSchemaInitHelper {
+  val uuid      = uuidGenerate
   val tableName = s"multiple_query_table_$uuid"
 
-  val queryTimeout = 5.seconds
-  val awaitTimeout = 15.seconds
-  implicit val materializer: Materializer = ActorMaterializer()
+  val queryTimeout                                = 5.seconds
+  val awaitTimeout                                = 15.seconds
+  implicit val materializer: Materializer         = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   override def beforeEach(): Unit = {
@@ -39,21 +45,22 @@ class MultipleQueryWithSchemaSpec extends TestKit(ActorSystem()) with WordSpecLi
 
   s"MultipleQueryWithSchemaSpec $uuid" when {
 
-      "run parallelly multiple query" in {
+    "run parallelly multiple query" in {
 
-        val slowQuery = s"""SELECT A1 FROM "$aTableName";"""
+      val slowQuery = s"""SELECT A1 FROM "$aTableName";"""
 
-        val queries = (0 until 10).map { _ =>
-          connector.rawSelect(slowQuery, None, queryTimeout).flatMap {
-            case Left(ex) => Future.successful(Left(ex))
-            case Right(source) => source.runWith(Sink.seq).map(Right(_)).recover {
+      val queries = (0 until 10).map { _ =>
+        connector.rawSelect(slowQuery, None, queryTimeout).flatMap {
+          case Left(ex) => Future.successful(Left(ex))
+          case Right(source) =>
+            source.runWith(Sink.seq).map(Right(_)).recover {
               case error => Left(ConnectionError(error))
             }
-          }
         }
-
-        val results = Await.result(Future.sequence(queries), awaitTimeout)
-        results.forall(_.isRight) shouldBe true
       }
+
+      val results = Await.result(Future.sequence(queries), awaitTimeout)
+      results.forall(_.isRight) shouldBe true
     }
+  }
 }

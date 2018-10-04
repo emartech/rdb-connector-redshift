@@ -13,7 +13,7 @@ import spray.json._
 
 import slick.jdbc.PostgresProfile.api._
 
-class RedshiftConnectorSpec extends WordSpecLike with Matchers with MockitoSugar{
+class RedshiftConnectorSpec extends WordSpecLike with Matchers with MockitoSugar {
 
   "RedshiftConnectorTest" when {
 
@@ -41,7 +41,6 @@ class RedshiftConnectorSpec extends WordSpecLike with Matchers with MockitoSugar
         val exampleWithoutMark = exampleConnection.copy(connectionParams = "")
         RedshiftConnector.createUrl(exampleWithoutMark) shouldBe "jdbc:redshift://host:123/database"
       }
-
 
     }
 
@@ -74,7 +73,7 @@ class RedshiftConnectorSpec extends WordSpecLike with Matchers with MockitoSugar
       implicit val executionContext = concurrent.ExecutionContext.Implicits.global
 
       "return Json in happy case" in {
-        val mxPool = new HikariPoolMXBean{
+        val mxPool = new HikariPoolMXBean {
           override def resumePool(): Unit = ???
 
           override def softEvictConnections(): Unit = ???
@@ -91,13 +90,13 @@ class RedshiftConnectorSpec extends WordSpecLike with Matchers with MockitoSugar
         }
 
         val poolName = UUID.randomUUID.toString
-        val db = mock[Database]
+        val db       = mock[Database]
 
-        val mbs:MBeanServer = ManagementFactory.getPlatformMBeanServer()
-        val mBeanName:ObjectName = new ObjectName(s"com.zaxxer.hikari:type=Pool ($poolName)")
-        mbs.registerMBean( mxPool, mBeanName)
+        val mbs: MBeanServer      = ManagementFactory.getPlatformMBeanServer()
+        val mBeanName: ObjectName = new ObjectName(s"com.zaxxer.hikari:type=Pool ($poolName)")
+        mbs.registerMBean(mxPool, mBeanName)
 
-        val connector = new RedshiftConnector(db, RedshiftConnector.defaultConfig, poolName, "public")
+        val connector   = new RedshiftConnector(db, RedshiftConnector.defaultConfig, poolName, "public")
         val metricsJson = connector.innerMetrics().parseJson.asJsObject
 
         metricsJson.fields.size shouldEqual 4
@@ -105,15 +104,14 @@ class RedshiftConnectorSpec extends WordSpecLike with Matchers with MockitoSugar
       }
 
       "return Json in sad case" in {
-        val db = mock[Database]
-        val poolName = ""
-        val connector = new RedshiftConnector(db, RedshiftConnector.defaultConfig, poolName, "public")
+        val db          = mock[Database]
+        val poolName    = ""
+        val connector   = new RedshiftConnector(db, RedshiftConnector.defaultConfig, poolName, "public")
         val metricsJson = connector.innerMetrics().parseJson.asJsObject
         metricsJson.fields.size shouldEqual 0
       }
 
     }
-
 
   }
 }

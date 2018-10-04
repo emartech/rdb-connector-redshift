@@ -14,10 +14,11 @@ trait SelectDbWithSchemaInitHelper {
   val aTableName: String
   val bTableName: String
 
-  val schema = "ittestschema"
+  val schema           = "ittestschema"
   val connectionConfig = TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = s"currentSchema=$schema")
 
-  val connector: Connector = Await.result(RedshiftConnector(connectionConfig)(AsyncExecutor.default()), 5.seconds).right.get
+  val connector: Connector =
+    Await.result(RedshiftConnector(connectionConfig)(AsyncExecutor.default()), 5.seconds).right.get
 
   def initDb(): Unit = {
     val createATableSql =
@@ -55,12 +56,15 @@ trait SelectDbWithSchemaInitHelper {
          |('b$$4', 'b%4', 'b 4', NULL)
          |;""".stripMargin
 
-    Await.result(for {
-      _ <- TestHelper.executeQuery(createATableSql)
-      _ <- TestHelper.executeQuery(createBTableSql)
-      _ <- TestHelper.executeQuery(insertADataSql)
-      _ <- TestHelper.executeQuery(insertBDataSql)
-    } yield (), 15.seconds)
+    Await.result(
+      for {
+        _ <- TestHelper.executeQuery(createATableSql)
+        _ <- TestHelper.executeQuery(createBTableSql)
+        _ <- TestHelper.executeQuery(insertADataSql)
+        _ <- TestHelper.executeQuery(insertBDataSql)
+      } yield (),
+      15.seconds
+    )
   }
 
   def cleanUpDb(): Unit = {

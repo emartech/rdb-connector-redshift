@@ -37,7 +37,8 @@ class RedshiftMetadataOnSpecificSchemaItSpec extends MetadataItSpec {
     db.run(sqlu"""#$sql""")
   }
 
-  val connector: Connector = Await.result(RedshiftConnector(configWithSchema)(AsyncExecutor.default()), 5.seconds).right.get
+  val connector: Connector =
+    Await.result(RedshiftConnector(configWithSchema)(AsyncExecutor.default()), 5.seconds).right.get
 
   override val awaitTimeout = 15.seconds
 
@@ -60,7 +61,7 @@ class RedshiftMetadataOnSpecificSchemaItSpec extends MetadataItSpec {
   }
 
   def cleanUpDb(): Unit = {
-    val dropViewSql = s"""DROP VIEW IF EXISTS "$schemaName"."$viewName";"""
+    val dropViewSql  = s"""DROP VIEW IF EXISTS "$schemaName"."$viewName";"""
     val dropTableSql = s"""DROP TABLE IF EXISTS "$schemaName"."$tableName";"""
     Await.result(for {
       _ <- executeQuery(dropViewSql)

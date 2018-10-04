@@ -16,9 +16,15 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
   import DefaultSqlWriters._
   import com.emarsys.rdb.connector.common.defaults.SqlWriter._
 
-  override def rawSelect(rawSql: String, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+  override def rawSelect(
+      rawSql: String,
+      limit: Option[Int],
+      timeout: FiniteDuration
+  ): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val query = removeEndingSemicolons(rawSql)
-    val limitedQuery = limit.fold(query) { l => wrapInLimit(query, l) }
+    val limitedQuery = limit.fold(query) { l =>
+      wrapInLimit(query, l)
+    }
     streamingQuery(timeout)(limitedQuery)
   }
 
@@ -42,8 +48,14 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     streamingQuery(5.seconds)(modifiedSql)
   }
 
-  private def runProjectedSelectWith[R](rawSql: String, fields: Seq[String], limit: Option[Int], allowNullFieldValue: Boolean, queryRunner: String => R) = {
-    val fieldList = concatenateProjection(fields)
+  private def runProjectedSelectWith[R](
+      rawSql: String,
+      fields: Seq[String],
+      limit: Option[Int],
+      allowNullFieldValue: Boolean,
+      queryRunner: String => R
+  ) = {
+    val fieldList    = concatenateProjection(fields)
     val projectedSql = wrapInProjection(rawSql, fieldList)
     val query =
       if (!allowNullFieldValue) wrapInCondition(projectedSql, fields)
@@ -53,7 +65,13 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     queryRunner(limitedQuery)
   }
 
-  override def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], timeout: FiniteDuration, allowNullFieldValue: Boolean): ConnectorResponse[Source[Seq[String], NotUsed]] =
+  override def projectedRawSelect(
+      rawSql: String,
+      fields: Seq[String],
+      limit: Option[Int],
+      timeout: FiniteDuration,
+      allowNullFieldValue: Boolean
+  ): ConnectorResponse[Source[Seq[String], NotUsed]] =
     runProjectedSelectWith(rawSql, fields, limit, allowNullFieldValue, streamingQuery(timeout))
 
   override def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = {

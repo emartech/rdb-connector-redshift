@@ -22,7 +22,10 @@ class RedshiftUpdateItSpec extends TestKit(ActorSystem()) with UpdateItSpec with
   }
 }
 
-class RedshiftUpdateWithSchemaItSpec extends TestKit(ActorSystem()) with UpdateItSpec with SelectDbWithSchemaInitHelper {
+class RedshiftUpdateWithSchemaItSpec
+    extends TestKit(ActorSystem())
+    with UpdateItSpec
+    with SelectDbWithSchemaInitHelper {
   val aTableName: String = tableName
   val bTableName: String = s"temp_$uuid"
 

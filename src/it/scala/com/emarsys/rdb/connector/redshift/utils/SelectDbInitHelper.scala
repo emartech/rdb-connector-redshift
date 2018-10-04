@@ -13,8 +13,8 @@ trait SelectDbInitHelper {
   val aTableName: String
   val bTableName: String
 
-
-  val connector: Connector = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds).right.get
+  val connector: Connector =
+    Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), 5.seconds).right.get
 
   def initDb(): Unit = {
     val createATableSql =
@@ -52,12 +52,15 @@ trait SelectDbInitHelper {
          |('b$$4', 'b%4', 'b 4', NULL)
          |;""".stripMargin
 
-    Await.result(for {
-      _ <- TestHelper.executeQuery(createATableSql)
-      _ <- TestHelper.executeQuery(createBTableSql)
-      _ <- TestHelper.executeQuery(insertADataSql)
-      _ <- TestHelper.executeQuery(insertBDataSql)
-    } yield (), 15.seconds)
+    Await.result(
+      for {
+        _ <- TestHelper.executeQuery(createATableSql)
+        _ <- TestHelper.executeQuery(createBTableSql)
+        _ <- TestHelper.executeQuery(insertADataSql)
+        _ <- TestHelper.executeQuery(insertBDataSql)
+      } yield (),
+      15.seconds
+    )
   }
 
   def cleanUpDb(): Unit = {

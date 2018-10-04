@@ -12,8 +12,8 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
   "RedshiftConnector" when {
 
     implicit val executionContext = scala.concurrent.ExecutionContext.Implicits.global
-    val executor = AsyncExecutor.default()
-    val timeout = 8.seconds
+    val executor                  = AsyncExecutor.default()
+    val timeout                   = 8.seconds
 
     "create connector" should {
 
@@ -25,15 +25,16 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
         connectionParams += "ssl=false"
 
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(connectionParams = connectionParams)
-        val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout)
+        val connection    = Await.result(RedshiftConnector(badConnection)(executor), timeout)
         connection shouldBe Left(ConnectionConfigError("SSL Error"))
       }
 
       "connect ok" in {
 
-        val connectorEither = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), timeout)
+        val connectorEither =
+          Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(AsyncExecutor.default()), timeout)
 
-        connectorEither shouldBe a [Right[_, _]]
+        connectorEither shouldBe a[Right[_, _]]
       }
 
     }
@@ -41,7 +42,8 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
     "#testConnection" should {
 
       "return ok in happy case" in {
-        val connection = Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(executor), timeout).toOption.get
+        val connection =
+          Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(executor), timeout).toOption.get
         val result = Await.result(connection.testConnection(), timeout)
         result shouldBe Right()
         connection.close()
@@ -49,7 +51,7 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
 
       "return error if cant connect" in {
         val badConnection = TestHelper.TEST_CONNECTION_CONFIG.copy(host = "asd.asd.asd")
-        val connection = Await.result(RedshiftConnector(badConnection)(executor), timeout)
+        val connection    = Await.result(RedshiftConnector(badConnection)(executor), timeout)
         connection shouldBe a[Left[_, _]]
         connection.left.get shouldBe a[ConnectionError]
       }
