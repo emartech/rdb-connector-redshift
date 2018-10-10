@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import com.emarsys.rdb.connector.redshift.utils.{SelectDbInitHelper, SelectDbWithSchemaInitHelper}
-import com.emarsys.rdb.connector.test.RawSelectItSpec
+import com.emarsys.rdb.connector.test._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.ExecutionContextExecutor
@@ -40,7 +40,7 @@ class RedshiftRawSelectItSpec
 
   "#analyzeRawSelect" should {
     "return result" in {
-      val result = getStreamResult(connector.analyzeRawSelect(simpleSelect))
+      val result = getConnectorResult(connector.analyzeRawSelect(simpleSelect), awaitTimeout)
 
       result.headOption shouldEqual Some(Seq("QUERY PLAN"))
     }
@@ -78,7 +78,7 @@ class RedshiftRawSelectWithSchemaItSpec
 
   "#analyzeRawSelect" should {
     "return result" in {
-      val result = getStreamResult(connector.analyzeRawSelect(simpleSelect))
+      val result = getConnectorResult(connector.analyzeRawSelect(simpleSelect), awaitTimeout)
 
       result.headOption shouldEqual Some(Seq("QUERY PLAN"))
     }

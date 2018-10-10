@@ -45,7 +45,7 @@ class RedshiftConnectorItSpec extends WordSpecLike with Matchers {
         val connection =
           Await.result(RedshiftConnector(TestHelper.TEST_CONNECTION_CONFIG)(executor), timeout).toOption.get
         val result = Await.result(connection.testConnection(), timeout)
-        result shouldBe Right()
+        result shouldBe Right({})
         connection.close()
       }
 

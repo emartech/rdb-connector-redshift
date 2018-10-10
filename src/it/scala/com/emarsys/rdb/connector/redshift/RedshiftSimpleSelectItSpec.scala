@@ -6,7 +6,7 @@ import akka.testkit.TestKit
 import com.emarsys.rdb.connector.common.models.SimpleSelect
 import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import com.emarsys.rdb.connector.redshift.utils.{SelectDbInitHelper, SelectDbWithSchemaInitHelper, TestHelper}
-import com.emarsys.rdb.connector.test.SimpleSelectItSpec
+import com.emarsys.rdb.connector.test._
 
 import concurrent.duration._
 import scala.concurrent.Await
