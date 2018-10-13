@@ -41,7 +41,7 @@ lazy val root = (project in file("."))
         "com.amazon.redshift" % "redshift-jdbc42"       % "1.2.8.1005",
         "org.scalatest"       %% "scalatest"            % scalaTestV % Test,
         "com.typesafe.akka"   %% "akka-stream-testkit"  % "2.5.6" % Test,
-        "com.github.emartech" % "rdb-connector-test"    % "2edd501" % Test,
+        "com.github.emartech" % "rdb-connector-test"    % "2edd501019" % Test,
         "com.typesafe.akka"   %% "akka-http-spray-json" % "10.0.7" % Test,
         "org.mockito"         % "mockito-core"          % "2.11.0" % Test
       )
