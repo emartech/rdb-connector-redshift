@@ -15,6 +15,6 @@ trait RedshiftIsOptimized {
             else Left(TableNotFound(table))
           )
       )
-      .recover(errorHandler())
+      .recover(eitherErrorHandler)
   }
 }

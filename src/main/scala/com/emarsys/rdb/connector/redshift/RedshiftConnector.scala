@@ -76,7 +76,7 @@ object RedshiftConnector extends RedshiftConnectorTrait {
 
 }
 
-trait RedshiftConnectorTrait extends ConnectorCompanion {
+trait RedshiftConnectorTrait extends ConnectorCompanion with RedshiftErrorHandling {
   private[redshift] val defaultConfig = RedshiftConnectorConfig(
     queryTimeout = 20.minutes,
     streamChunkSize = 5000
@@ -112,9 +112,7 @@ trait RedshiftConnectorTrait extends ConnectorCompanion {
         .map { _ =>
           Right(new RedshiftConnector(db, connectorConfig, poolName, currentSchema))
         }
-        .recover {
-          case ex => Left(ConnectionError(ex))
-        }
+        .recover(eitherErrorHandler)
         .map {
           case Left(e) =>
             db.shutdown

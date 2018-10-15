@@ -17,7 +17,7 @@ trait RedshiftMetadata {
       )
       .map(_.map(parseToTableModel))
       .map(Right(_))
-      .recover(errorHandler())
+      .recover(eitherErrorHandler)
   }
 
   override def listFields(tableName: String): ConnectorResponse[Seq[FieldModel]] = {
@@ -33,7 +33,7 @@ trait RedshiftMetadata {
           Right(fields)
         }
       })
-      .recover(errorHandler())
+      .recover(eitherErrorHandler)
   }
 
   override def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = {
@@ -42,7 +42,7 @@ trait RedshiftMetadata {
       tablesE <- listTables()
       map     <- futureMap
     } yield tablesE.map(makeTablesWithFields(_, map)))
-      .recover(errorHandler())
+      .recover(eitherErrorHandler)
   }
 
   private def listAllFields(): Future[Map[String, Seq[FieldModel]]] = {

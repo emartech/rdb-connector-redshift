@@ -40,6 +40,7 @@ trait RedshiftStreamingQuery {
             List(data._2)
           }
       }
+      .recoverWithRetries(1, streamErrorHandler)
 
     Future.successful(Right(dbSource))
   }

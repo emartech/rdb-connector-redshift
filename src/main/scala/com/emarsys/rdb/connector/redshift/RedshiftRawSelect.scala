@@ -32,7 +32,7 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     val modifiedSql = wrapInExplain(removeEndingSemicolons(rawSql))
     runQueryOnDb(modifiedSql)
       .map(_ => Right(()))
-      .recover(errorHandler())
+      .recover(eitherErrorHandler)
   }
 
   private def runQueryOnDb(modifiedSql: String) = {
@@ -78,7 +78,7 @@ trait RedshiftRawSelect extends RedshiftStreamingQuery {
     val wrapInExplainThenRunOnDb = wrapInExplain _ andThen runQueryOnDb
     runProjectedSelectWith(rawSql, fields, None, allowNullFieldValue = true, wrapInExplainThenRunOnDb)
       .map(_ => Right(()))
-      .recover(errorHandler())
+      .recover(eitherErrorHandler)
   }
 
   private def concatenateProjection(fields: Seq[String]) =
