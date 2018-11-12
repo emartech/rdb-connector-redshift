@@ -3,7 +3,7 @@ package com.emarsys.rdb.connector.redshift
 import java.util.UUID
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.Errors.{ConnectionConfigError, ConnectionError}
+import com.emarsys.rdb.connector.common.models.Errors.ConnectionConfigError
 import com.emarsys.rdb.connector.common.models.SimpleSelect.TableName
 import com.emarsys.rdb.connector.common.models._
 import com.emarsys.rdb.connector.redshift.RedshiftConnector.{RedshiftConnectionConfig, RedshiftConnectorConfig}
