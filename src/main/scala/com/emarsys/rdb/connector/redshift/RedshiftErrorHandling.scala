@@ -27,7 +27,7 @@ trait RedshiftErrorHandling {
   )
 
   private def errorHandler: PartialFunction[Throwable, ConnectorError] = {
-    case ex: RejectedExecutionException                                          => TooManyQueries
+    case ex: RejectedExecutionException                                          => TooManyQueries(ex.getMessage)
     case ex: SQLException if ex.getSQLState == REDSHIFT_STATE_CONNECTION_TIMEOUT => ConnectionTimeout(ex.getMessage)
     case ex: SQLException if ex.getSQLState == REDSHIFT_STATE_QUERY_CANCELLED    => QueryTimeout(ex.getMessage)
     case ex: SQLException if ex.getSQLState == REDSHIFT_STATE_SYNTAX_ERROR       => SqlSyntaxError(ex.getMessage)

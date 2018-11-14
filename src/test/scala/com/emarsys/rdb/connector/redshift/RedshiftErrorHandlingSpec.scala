@@ -42,8 +42,8 @@ class RedshiftErrorHandlingSpec extends WordSpecLike with Matchers {
     )
 
     "convert RejectedExecutionException to TooManyQueries" in new RedshiftErrorHandling {
-      val e = new RejectedExecutionException
-      eitherErrorHandler.apply(e) shouldEqual Left(TooManyQueries)
+      val e = new RejectedExecutionException("msg")
+      eitherErrorHandler.apply(e) shouldEqual Left(TooManyQueries("msg"))
     }
 
     "convert unhandled SQLException to ErrorWithMessage" in new RedshiftErrorHandling {
